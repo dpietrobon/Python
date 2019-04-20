@@ -85,7 +85,7 @@ class Snake:
             if (abs(head_x - item_x) < rect_x) and (abs(head_y - item_y) < rect_y): 
                 canvas.delete(item_yolo)
                 self.energy += 1
-                if (self.energy % 5 == 1):
+                if (self.energy % 50 == 1):
                     print(self.name + " has eaten " + str(self.energy) + " plants.")
             
 def Food_Generation(p,row,col): 
@@ -132,11 +132,16 @@ def DrawRect_From_Entry(m=2,n=2,colour='grey'):
 def generate_board():
     canvas.delete('plant')
     p = int(Initial_Food_Entry.get())
+
     nrows = int(grid_size_x.get())
     ncols = int(grid_size_y.get())
+
     snake.grid_x = nrows
-    #print(snake.grid_x)
     snake.grid_y = ncols
+    #print(snake.grid_x)
+    snake2.grid_x = nrows
+    snake2.grid_y = ncols
+    
     #DrawGrid(nrows,ncols)
     Food_Generation(p,nrows,ncols)
 
@@ -157,6 +162,10 @@ def canvas_update():
         snake2.update_body()
         snake2.eat()
         snake2.draw()
+
+        '''add plant elements randomly'''
+        # ensures the board state does not run out of food for snakes to eat.
+        
     
         canvas.after(100,canvas_update)
 
@@ -164,9 +173,12 @@ def toggle_play():
     global loop_state
     
     if loop_state == 'on':
-        loop_state = 'off' # pause_loop()
-    if loop_state == 'off':
+        loop_state = 'off' # clicking play twice pauses the loop
+        print(Play_Button)
+        Play_Button.config(relief="raised")
+    else:
         loop_state = 'on'
+        Play_Button.config(relief="sunken")
         canvas_update()
         
 
@@ -287,7 +299,8 @@ Num_Snakes_Entry = Entry(frame9,width=2).pack(side='left')
 # Play Button
 
 play_image = PhotoImage(file = 'play_button.png')
-Play_Button = Button(frame10,image=play_image,command=toggle_play).pack(side='left')
+Play_Button = Button(frame10,image=play_image,command=toggle_play,relief="raised")
+Play_Button.pack(side='left')
 
 # Pause Button
 
