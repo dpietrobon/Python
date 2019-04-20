@@ -24,12 +24,17 @@ class Snake:
         self.grid_x = grid_x
         self.grid_y = grid_y
         self.energy = 0
+        self.age = 0
         
     def draw(self):
         for elem in self.body:
             DrawRect(elem[0],elem[1],'grey',self.name)
 
     def update_body(self):
+        self.age += 1
+        if (self.age % 1000 == 0):
+            print(self.name + " is " + str(self.age) + " moves old.")
+            
         canvas.delete(self.name)
 
         body_clipped = np.delete(self.body,0,0)
@@ -71,13 +76,17 @@ class Snake:
         head_y = self.body[-1][1]*rect_y
 
         item_yolo = canvas.find_closest(head_x,head_y)
-        item_x = canvas.coords(item_yolo)[0]
-        item_y = canvas.coords(item_yolo)[1]
-        if (abs(head_x - item_x) < rect_x) and (abs(head_y - item_y) < rect_y): 
-            canvas.delete(item_yolo)
-            self.energy += 1
-            if (self.energy % 5 == 1):
-                print(self.name + " has eaten " + str(self.energy) + " plants.")
+        item_tags = canvas.gettags(item_yolo)
+
+        if (item_yolo and 'plant' in item_tags):
+            #print(item_tags)
+            item_x = canvas.coords(item_yolo)[0]
+            item_y = canvas.coords(item_yolo)[1]
+            if (abs(head_x - item_x) < rect_x) and (abs(head_y - item_y) < rect_y): 
+                canvas.delete(item_yolo)
+                self.energy += 1
+                if (self.energy % 5 == 1):
+                    print(self.name + " has eaten " + str(self.energy) + " plants.")
             
 def Food_Generation(p,row,col): 
     for n in range(1,row+1):
@@ -294,11 +303,11 @@ grid_x = int(grid_size_x.get())
 grid_y = int(grid_size_y.get())
 
 body = np.array([[1,1],[1,2],[1,3],[2,3],[2,4],[3,4],[3,5],[3,6],[4,6],[5,6],[6,6]])
-snake = Snake('jeff',body,1,grid_x,grid_y)
+snake = Snake('jeffy',body,1,grid_x,grid_y)
 snake.draw()
 
 body2 = np.array([[5,5],[5,6],[5,7],[6,7],[6,8],[7,8],[7,9],[7,10],[8,10],[9,10],[10,10]])
-snake2 = Snake('jeffu',body2,1,grid_x,grid_y)
+snake2 = Snake('snake_02',body2,1,grid_x,grid_y)
 snake2.draw()
 
 p = 33
