@@ -1,4 +1,6 @@
-# Genetic Program Test: Snake 2D
+''' Genetic Program and Algorithm Test Design '''
+''' 2D Implementation and GUI '''
+### Working Title: Snakes on a (Cartesian) Plane ###
 
 from tkinter import *
 import numpy as np
@@ -27,33 +29,11 @@ class Snake:
         self.age = 0
         
     def draw(self):
+        ''' should only need to draw the head at every step. '''
+        ''' moving is another option '''
+        ''' simplest is to delete and redraw everything ?? '''
         for elem in self.body:
             DrawRect(elem[0],elem[1],'grey',self.name)
-
-    def update_body(self):
-        self.age += 1
-        if (self.age % 1000 == 0):
-            print(self.name + " is " + str(self.age) + " moves old.")
-            
-        canvas.delete(self.name)
-
-        body_clipped = np.delete(self.body,0,0)
-
-        rand_int = random.randint(1,100)
-    
-        if rand_int < 25:
-            c = np.mod(body_clipped[-1]+[1,0],[self.grid_x,self.grid_y])
-        if (25 <= rand_int < 50):
-            c = np.mod(body_clipped[-1]-[0,1],[self.grid_x,self.grid_y])
-        if (50 <= rand_int < 75):
-            c = np.mod(body_clipped[-1]-[1,0],[self.grid_x,self.grid_y])
-        if (75 <= rand_int <= 100):
-            c = np.mod(body_clipped[-1]+[0,1],[self.grid_x,self.grid_y])
-
-        body_clipper = np.append(body_clipped,[c],0)
-
-        #print(body_clipper)
-        self.body = body_clipper # nailed it!
 
     def eat(self):
         '''obviously we don't want to define unchanging variables inside LOOPED behaviour but c'est la vie'''
@@ -87,7 +67,67 @@ class Snake:
                 self.energy += 1
                 if (self.energy % 50 == 1):
                     print(self.name + " has eaten " + str(self.energy) + " plants.")
+
+    def head_xy(self):
+        ''' Obtains the xy (canvas) coordinates of the snake head... '''
+        ''' Perhaps tinker can do this more simply with reference to the item '''
+        ''' compare to update_body() and eat() '''
+        
+        
+    def update_body(self):
+        self.age += 1
+        if (self.age % 1000 == 0):
+            print(self.name + " is " + str(self.age) + " moves old.")
+
+        if (self.age % 200 == 0):
+            self.view()
             
+        canvas.delete(self.name) #only need to delete the tail and draw the head
+
+        body_clipped = np.delete(self.body,0,0)
+
+        ''' Genetic Algorithm '''
+        ''' Gen 01: The snake randomly selects one of the four cardinal
+            directions and heads that way. '''
+
+        rand_int = random.randint(1,100)
+    
+        if rand_int < 20:
+            c = np.mod(body_clipped[-1]+[1,0],[self.grid_x,self.grid_y])
+        if (20 <= rand_int < 40):
+            c = np.mod(body_clipped[-1]-[0,1],[self.grid_x,self.grid_y])
+        if (40 <= rand_int < 60):
+            c = np.mod(body_clipped[-1]-[1,0],[self.grid_x,self.grid_y])
+        if (60 <= rand_int <= 80):
+            c = np.mod(body_clipped[-1]+[0,1],[self.grid_x,self.grid_y])
+        if (80 <= rand_int <= 100):
+            c = body_clipped[-1]
+        
+        ''' There's this whole stupid delete the entire body everytime
+            thing too... Better is MOVE each body element? The head into
+            a new square. The body and tail follows the segment immediately
+            in front of it... todo '''
+        
+        body_clipper = np.append(body_clipped,[c],0)
+
+        #print(body_clipper)
+        self.body = body_clipper # nailed it! took long enough.
+
+    def view(self):
+        ''' creates a matrix of surrounding area (snakes visual field) '''
+        ''' gen 01: creates a 5x5 matrix: 0 for empty 1 for plant? '''
+        view_space = np.zeros([5,5])
+        #print(view_space)
+        for n in range(5):
+            for m in range(5):
+                pass
+                #print(view_space[n,m])
+        #canvas.find_overlapping(x1, y1, x2, y2)
+        print(self.body[-1])
+### END of Snake Class ###
+
+''' General Purpose Functions '''
+    
 def Food_Generation(p,row,col): 
     for n in range(1,row+1):
         for m in range(1,col+1):
@@ -141,6 +181,13 @@ def generate_board():
     #print(snake.grid_x)
     snake2.grid_x = nrows
     snake2.grid_y = ncols
+
+
+    ''' delete and redraw snakes to match new grid size '''
+    slith = [snake,snake2]
+    for s in slith:
+        canvas.delete(s.name)
+        s.draw()
     
     #DrawGrid(nrows,ncols)
     Food_Generation(p,nrows,ncols)
@@ -164,7 +211,7 @@ def canvas_update():
         snake2.draw()
 
         '''add plant elements randomly'''
-        # ensures the board state does not run out of food for snakes to eat.
+        #ensures the board state does not run out of food for snakes to eat.
         
     
         canvas.after(100,canvas_update)
@@ -173,8 +220,8 @@ def toggle_play():
     global loop_state
     
     if loop_state == 'on':
-        loop_state = 'off' # clicking play twice pauses the loop
-        print(Play_Button)
+        loop_state = 'off' #clicking play twice pauses the loop
+        #print(Play_Button) 
         Play_Button.config(relief="raised")
     else:
         loop_state = 'on'
@@ -184,15 +231,16 @@ def toggle_play():
 
 def pause_loop():
     global loop_state
-    loop_state = 'off'
+    if loop_state == 'on':
+        loop_state = 'off'
+        Play_Button.config(relief="raised")
 
-# Initialize Root Window
-
+''' Initialize Root Window '''
 root = Tk()
 root.title("Snake 1.0")
 root.config(padx=5,pady=5)
 
-# Get user's current screen resolution.
+''' Get user's current screen resolution '''
 screen_width = root.winfo_screenwidth()
 screen_height = root.winfo_screenheight()
 
@@ -203,14 +251,11 @@ str_geometry = "%dx%d" % (padded_w,padded_h)
 
 root.geometry(str_geometry)
 
-# Initialize Canvas
-
+''' Initialize Canvas '''
 canvas = Canvas(width=300,height=300,bg="white",bd=1,relief="solid")
 canvas.pack(expand=True,fill=BOTH,side='left')
 
-# Frames - Mostly for Sidebar GUI
-''' Think on naming conventions '''
-
+''' Frames - Mostly for Sidebar GUI '''
 frame = Frame(root)
 frame.pack(side='top')
 
@@ -247,8 +292,7 @@ frame_board.pack()
 frame10 = Frame(frame)
 frame10.pack()
 
-# Draw Grid - Entry Fields & Labels
-
+''' Draw Grid - Entry Fields & Labels '''
 Grid_Num_Rows = Label(frame2,text="Grid Size = ")
 Grid_Num_Rows.pack(side='left')
 
@@ -262,13 +306,13 @@ grid_size_y = Entry(frame2,width=3)
 grid_size_y.insert(0,'20')
 grid_size_y.pack(side='left')
 
-# Draw Grid - Button
+''' Draw Grid Button '''
+# Note: Buttons pack()ed inline are not recognised as Button objects.
 
 ##ToggleGrid_Button = Button(frame_gridbutton, width=12, text="Toggle Grid", command=DrawGrid)
 ##ToggleGrid_Button.pack(side='bottom')
 
-# Food Generation - Label & Entry
-
+''' Food Generation - Label & Entry '''
 Initial_Food = Label(frame7, text="Initial Food = ")
 Initial_Food.pack(side='left')
 
@@ -278,40 +322,40 @@ Initial_Food_Entry.pack(side='left')
 
 Food_Label_2 = Label(frame7,text="%").pack(side='left')
 
-# Time Step - Label
-
+''' Time Step Counter and Label '''
 v = StringVar()
 Time_Step_Label = Label(frame8, textvariable=v).pack()
 time_string = "Time = " + str(time) 
 v.set(time_string)
 
 
-# Reset Board - Button
-
+''' Boardstate Generation Button '''
 Board_Set_Button = Button(frame_board,text="Generate Board",command=generate_board) 
 Board_Set_Button.pack()
 
-# Number of Snakes - Label and Entry Field
+''' Number of Snakes - Label and Entry Field '''
 
-Num_Snake_Label = Label(frame9,text="Number of Snakes: ").pack(side='left')
-Num_Snakes_Entry = Entry(frame9,width=2).pack(side='left')
+##Num_Snake_Label = Label(frame9,text="Number of Snakes: ").pack(side='left')
+##Num_Snakes_Entry = Entry(frame9,width=2).pack(side='left')
 
-# Play Button
-
+''' Play Button '''
 play_image = PhotoImage(file = 'play_button.png')
 Play_Button = Button(frame10,image=play_image,command=toggle_play,relief="raised")
 Play_Button.pack(side='left')
 
-# Pause Button
+''' Fast Forward Button '''
+fast_forward_img = PhotoImage(file = 'fast_forward_button.png')
+Fast_Forward_Button = Button(frame10,image=fast_forward_img,command=canvas_update,relief="raised")
+Fast_Forward_Button.pack(side='left')
 
+''' Pause Button '''
 pause_image = PhotoImage(file = 'pause_button.png')
-Pause_Button = Button(frame10,image=pause_image,command=pause_loop).pack(side='left')
+Pause_Button = Button(frame10,image=pause_image,command=pause_loop)
+Pause_Button.pack(side='left')
 
 
 ### Main ###
-
-# DrawGrid(20,20)
-
+''' MAIN '''
 grid_x = int(grid_size_x.get())
 grid_y = int(grid_size_y.get())
 
