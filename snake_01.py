@@ -4,27 +4,28 @@
 
 from tkinter import *
 import numpy as np
-import math
 import random
 
-# Global Variables and Initializations
+''' Global Variables and Initializations '''
 
 global time
 global loop_state
+global x_step
+global y_step
 
 time = 0
 loop_state = 'off'
 
-# Functions
+''' SNAKE CLASS: Models a Snake on a 2D Grid Boardstate '''
 
 class Snake:
     # Initializer / Instance Attributes
-    def __init__(self, name, body, moves, grid_x, grid_y):
+    def __init__(self, name, body, moves): 
         self.name = name
         self.body = body
-        self.moves = moves
-        self.grid_x = grid_x
-        self.grid_y = grid_y
+        self.moves = moves # as yet unused
+        self.grid_x = int(grid_size_x.get())
+        self.grid_y = int(grid_size_y.get())
         self.energy = 0
         self.age = 0
         
@@ -33,7 +34,7 @@ class Snake:
         ''' moving is another option '''
         ''' simplest is to delete and redraw everything ?? '''
         for elem in self.body:
-            DrawRect(elem[0],elem[1],'grey',self.name)
+            draw_rect(elem[0],elem[1],'grey',self.name)
 
     def eat(self):
         '''obviously we don't want to define unchanging variables inside LOOPED behaviour but c'est la vie'''
@@ -62,16 +63,18 @@ class Snake:
             #print(item_tags)
             item_x = canvas.coords(item_yolo)[0]
             item_y = canvas.coords(item_yolo)[1]
-            if (abs(head_x - item_x) < rect_x) and (abs(head_y - item_y) < rect_y): 
+            if (abs(head_x - item_x) < rect_x-1) and (abs(head_y - item_y) < rect_y-1): 
                 canvas.delete(item_yolo)
                 self.energy += 1
                 if (self.energy % 50 == 1):
                     print(self.name + " has eaten " + str(self.energy) + " plants.")
 
     def head_xy(self):
-        ''' Obtains the xy (canvas) coordinates of the snake head... '''
-        ''' Perhaps tinker can do this more simply with reference to the item '''
-        ''' compare to update_body() and eat() '''
+        ''' Returns the xy (canvas) coordinates of the snake head... '''
+        ''' cf: update_body() ''' # top-left corner
+        
+        head_x = self.body[-1][0]
+        head_y = self.body[-1][1]
         
         
     def update_body(self):
@@ -79,8 +82,10 @@ class Snake:
         if (self.age % 1000 == 0):
             print(self.name + " is " + str(self.age) + " moves old.")
 
-        if (self.age % 200 == 0):
-            self.view()
+        if (self.age % 500 == 0):
+            global x_step
+            global y_step
+            self.view(x_step,y_step)
             
         canvas.delete(self.name) #only need to delete the tail and draw the head
 
@@ -113,7 +118,7 @@ class Snake:
         #print(body_clipper)
         self.body = body_clipper # nailed it! took long enough.
 
-    def view(self):
+    def view(self,x_step,y_step):
         ''' creates a matrix of surrounding area (snakes visual field) '''
         ''' gen 01: creates a 5x5 matrix: 0 for empty 1 for plant? '''
         view_space = np.zeros([5,5])
@@ -129,45 +134,24 @@ class Snake:
 ''' General Purpose Functions '''
     
 def Food_Generation(p,row,col): 
-    for n in range(1,row+1):
-        for m in range(1,col+1):
+    for n in range(0,row):
+        for m in range(0,col):
             if random.randint(0,100) < p:
                 draw_plant(n,m)
 
-def draw_plant(row,column):
-    DrawRect(row,column,'green','plant')
+def draw_plant(m,n):
+    draw_rect(m,n,'green','plant')
     
-def DrawRect(m,n,colour='grey',tagg = 'rect'):
-    
+def draw_rect(m,n,colour='grey',tagg = 'rect'):
+
+    ''' Get grid size (n x m) from the grid_size x&y Entry fields '''
     grid_x = int(grid_size_x.get())
-    grid_y = int(grid_size_y.get())
+    grid_y = int(grid_size_y.get()) 
 
-    canvas.update()
-    
-    canvas_width = canvas.winfo_width()
-    canvas_height = canvas.winfo_height()
-
-    rect_x = (canvas_width)/(grid_x)
-    rect_y = (canvas_height)/(grid_y)
-    
-    canvas.create_rectangle([(m)*(rect_x),(n)*(rect_y)],[(m+1)*(rect_x),(n+1)*(rect_y)],fill=colour,tag=tagg)
-
-def DrawRect_From_Entry(m=2,n=2,colour='grey'):
-    grid_x = int(grid_size_x.get())
-    grid_y = int(grid_size_y.get())
-
-    canvas.update()
-
-    n = int(Rect_Row_Entry.get())
-    m = int(Rect_Col_Entry.get())
-    
-    canvas_width = canvas.winfo_width()
-    canvas_height = canvas.winfo_height()
-
-    rect_x = (canvas_width)/(grid_x)
-    rect_y = (canvas_height)/(grid_y)
-    
-    canvas.create_rectangle([(m-1)*(rect_x),(n-1)*(rect_y)],[m*(rect_x),n*(rect_y)],fill=colour,tag='rect')
+    ''' Necesarry to check definitions as grid entry fields may be empty. '''
+    if (grid_x and grid_y):
+        [rect_x,rect_y] = grid_xy(grid_x,grid_y)
+        canvas.create_rectangle([(m)*(rect_x),(n)*(rect_y)],[(m+1)*(rect_x),(n+1)*(rect_y)],fill=colour,tag=tagg)
 
 def generate_board():
     canvas.delete('plant')
@@ -192,6 +176,23 @@ def generate_board():
     #DrawGrid(nrows,ncols)
     Food_Generation(p,nrows,ncols)
 
+def grid_xy(n,m):
+    ''' Returns x and y (Cartesian) canvas coordinates '''
+    ''' Given grid-size (n x m) '''
+    canvas.update()
+    canvas_width = canvas.winfo_width()
+    canvas_height = canvas.winfo_height()
+    return [(canvas_width)/(n),(canvas_height)/(m)] # this isn't right...
+
+def grid_step_xy():
+    canvas.update()
+    canvas_width = canvas.winfo_width()
+    canvas_height = canvas.winfo_height()
+    n = int(grid_size_x.get())
+    m = int(grid_size_y.get())
+    return [(canvas_width)/(n),(canvas_height)/(m)]
+    
+
 def canvas_update():
     """ update time counter """
     global time
@@ -213,8 +214,10 @@ def canvas_update():
         '''add plant elements randomly'''
         #ensures the board state does not run out of food for snakes to eat.
         
-    
         canvas.after(100,canvas_update)
+
+''' Frame Functions '''
+# Button Toggles
 
 def toggle_play():
     global loop_state
@@ -245,7 +248,7 @@ screen_width = root.winfo_screenwidth()
 screen_height = root.winfo_screenheight()
 
 padded_w = screen_width - 400   # Pad's user screen resolution.
-padded_h = screen_height - 200
+padded_h = screen_height - 200  # Aesthetic for initial launch of program.
 
 str_geometry = "%dx%d" % (padded_w,padded_h)
 
@@ -356,19 +359,22 @@ Pause_Button.pack(side='left')
 
 ### Main ###
 ''' MAIN '''
-grid_x = int(grid_size_x.get())
-grid_y = int(grid_size_y.get())
 
-body = np.array([[1,1],[1,2],[1,3],[2,3],[2,4],[3,4],[3,5],[3,6],[4,6],[5,6],[6,6]])
-snake = Snake('jeffy',body,1,grid_x,grid_y)
+canvas.update()
+[x_step,y_step] = grid_step_xy() 
+
+p = 33 # Proportion of food on boardspace
+Food_Generation(p,20,20)
+
+''' Initialize and Draw Snakes '''
+
+body = np.array([[4,6],[5,6],[6,6]])
+snake = Snake('jeffy',body,1)
 snake.draw()
 
-body2 = np.array([[5,5],[5,6],[5,7],[6,7],[6,8],[7,8],[7,9],[7,10],[8,10],[9,10],[10,10]])
-snake2 = Snake('snake_02',body2,1,grid_x,grid_y)
+body2 = np.array([[7,10],[8,10],[9,10],[10,10]])
+snake2 = Snake('snakederella',body2,1)
 snake2.draw()
-
-p = 33
-#Food_Generation(p,20,20)
 
 canvas.update()
 
