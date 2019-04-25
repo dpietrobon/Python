@@ -34,7 +34,7 @@ class Snake:
         ''' moving is another option '''
         ''' simplest is to delete and redraw everything ?? '''
         for elem in self.body:
-            draw_rect(elem[0],elem[1],'grey',self.name)
+            draw_rect(elem[0],elem[1],'grey',[self.name,'snake'])
 
     def eat(self):
         '''obviously we don't want to define unchanging variables inside LOOPED behaviour but c'est la vie'''
@@ -66,15 +66,15 @@ class Snake:
             if (abs(head_x - item_x) < rect_x-1) and (abs(head_y - item_y) < rect_y-1): 
                 canvas.delete(item_yolo)
                 self.energy += 1
-                if (self.energy % 50 == 1):
+                if (self.energy % 50 == 0):
                     print(self.name + " has eaten " + str(self.energy) + " plants.")
 
-    def head_xy(self):
+    def head_xy(self,x_step,y_step):
         ''' Returns the xy (canvas) coordinates of the snake head... '''
         ''' cf: update_body() ''' # top-left corner
-        
-        head_x = self.body[-1][0]
-        head_y = self.body[-1][1]
+        head_x = self.body[-1][0]*x_step + 0.5*x_step
+        head_y = self.body[-1][1]*y_step + 0.5*y_step
+        return [head_x, head_y]
         
         
     def update_body(self):
@@ -86,6 +86,7 @@ class Snake:
             global x_step
             global y_step
             self.view(x_step,y_step)
+            print(self.head_xy(x_step,y_step))
             
         canvas.delete(self.name) #only need to delete the tail and draw the head
 
@@ -93,7 +94,7 @@ class Snake:
 
         ''' Genetic Algorithm '''
         ''' Gen 01: The snake randomly selects one of the four cardinal
-            directions and heads that way. '''
+            directions or chooses no movement and heads that way. '''
 
         rand_int = random.randint(1,100)
     
@@ -120,15 +121,27 @@ class Snake:
 
     def view(self,x_step,y_step):
         ''' creates a matrix of surrounding area (snakes visual field) '''
-        ''' gen 01: creates a 5x5 matrix: 0 for empty 1 for plant? '''
+        ''' gen 01: creates a 5x5 matrix: 0 for empty 1 for plant. '''
         view_space = np.zeros([5,5])
+        head_xy = self.head_xy(x_step,y_step)
         #print(view_space)
+        width = canvas.winfo_width()
+        height = canvas.winfo_width()
         for n in range(5):
             for m in range(5):
-                pass
+                x1 = np.mod(head_xy[0] - 2*x_step + n*x_step - 1, width )
+                x2 = np.mod(head_xy[0] - 2*x_step + n*x_step + 1, width )
+                y1 = np.mod(head_xy[1] - 2*y_step + m*y_step - 1, height)
+                y2 = np.mod(head_xy[1] - 2*y_step + m*y_step + 1, height) 
                 #print(view_space[n,m])
-        #canvas.find_overlapping(x1, y1, x2, y2)
-        print(self.body[-1])
+                viewed_item = canvas.find_overlapping(x1, y1, x2, y2)
+                item_tags = canvas.gettags(viewed_item)
+                if 'plant' in item_tags:
+                    view_space[n,m] = 1
+                if 'snake' in item_tags:
+                    view_space[n,m] = 2
+        #print(self.body[-1])
+        print(view_space)
 ### END of Snake Class ###
 
 ''' General Purpose Functions '''
@@ -142,7 +155,7 @@ def Food_Generation(p,row,col):
 def draw_plant(m,n):
     draw_rect(m,n,'green','plant')
     
-def draw_rect(m,n,colour='grey',tagg = 'rect'):
+def draw_rect(m,n,colour='grey',tagg='rect'):
 
     ''' Get grid size (n x m) from the grid_size x&y Entry fields '''
     grid_x = int(grid_size_x.get())
@@ -368,12 +381,12 @@ Food_Generation(p,20,20)
 
 ''' Initialize and Draw Snakes '''
 
-body = np.array([[4,6],[5,6],[6,6]])
+body = np.array([[4,6],[5,6],[6,6],[6,7],[7,7]])
 snake = Snake('jeffy',body,1)
 snake.draw()
 
-body2 = np.array([[7,10],[8,10],[9,10],[10,10]])
-snake2 = Snake('snakederella',body2,1)
+body2 = np.array([[7,10],[8,10],[9,10],[10,10],[11,10],[12,10]])
+snake2 = Snake('snakerella',body2,1)
 snake2.draw()
 
 canvas.update()
