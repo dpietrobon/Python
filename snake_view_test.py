@@ -64,7 +64,8 @@ class Snake:
             item_x = canvas.coords(item_yolo)[0]
             item_y = canvas.coords(item_yolo)[1]
             if (abs(head_x - item_x) < rect_x-1) and (abs(head_y - item_y) < rect_y-1): 
-                canvas.delete(item_yolo)
+                if self.name not in item_tags:
+                    canvas.delete(item_yolo)
                 self.energy += 1
                 if (self.energy % 50 == 0):
                     print(self.name + " has eaten " + str(self.energy) + " plants.")
@@ -82,43 +83,38 @@ class Snake:
         if (self.age % 1000 == 0):
             print(self.name + " is " + str(self.age) + " moves old.")
             
-        canvas.delete(self.name) #only need to delete the tail and draw the head
+        canvas.delete(self.name) # delete snake body on canvas
 
-        body_clipped = np.delete(self.body,0,0)
+        #body_clipped = np.delete(self.body,0,0)
 
-        if (self.age % 500 == 0):
-            #print(self.body)
-            #print(body_clipped)
-            pass
-            
         ''' Genetic Algorithm '''
         ''' Gen 01: The snake randomly selects one of the four cardinal
             directions or chooses no movement and heads that way. '''
 
-        rand_int = random.randint(1,100)
+        rand_int = random.randint(1,100) # generate random int in (1-100)
     
-        if rand_int < 20:
-            c = np.mod(body_clipped[-1]+[1,0],[self.grid_x,self.grid_y])
-        if (20 <= rand_int < 40):
-            c = np.mod(body_clipped[-1]-[0,1],[self.grid_x,self.grid_y])
-        if (40 <= rand_int < 60):
-            c = np.mod(body_clipped[-1]-[1,0],[self.grid_x,self.grid_y])
-        if (60 <= rand_int <= 80):
-            c = np.mod(body_clipped[-1]+[0,1],[self.grid_x,self.grid_y])
-        if (80 <= rand_int <= 100):
-            c = body_clipped[-1]
+##        if rand_int < 20:
+##            c = np.mod(body_clipped[-1],[self.grid_x,self.grid_y])
+##        if (20 <= rand_int < 40):
+##            c = np.mod(body_clipped[-1],[self.grid_x,self.grid_y])
+##        if (40 <= rand_int < 60):
+##            c = np.mod(body_clipped[-1],[self.grid_x,self.grid_y])
+##        if (60 <= rand_int <= 80):
+##            c = np.mod(body_clipped[-1],[self.grid_x,self.grid_y])
+##        if (80 <= rand_int <= 100):
+##            c = body_clipped[-1]
         
         ''' There's this whole stupid delete the entire body everytime
             thing too... Better is MOVE each body element? The head into
             a new square. The body and tail follows the segment immediately
             in front of it... todo '''
         
-        body_clipper = np.append(body_clipped,[c],0)
+        #body_clipper = np.append(body_clipped,[c],0)
 
         #print(body_clipper)
-        self.body = body_clipper # nailed it! took long enough.
+        #self.body = body_clipper # nailed it! took long enough.
 
-        self.eat() #eat before draw or snake eats own head.
+        self.eat()
         self.draw()
 
         if (self.age % 500 == 0):
@@ -126,9 +122,7 @@ class Snake:
             global y_step
             self.view(x_step,y_step)
             #print(self.head_xy(x_step,y_step))
-            pause_loop()
 
-        
     def view(self,x_step,y_step):
         ''' creates a matrix of surrounding area (snakes visual field) '''
         ''' gen 01: creates a 5x5 matrix: 0 for empty 1 for plant. '''
@@ -139,14 +133,16 @@ class Snake:
         height = canvas.winfo_width()
         for n in range(0,5):
             for m in range(0,5):
-                x1 = np.mod(head_xy[0] - 2*x_step + n*x_step - 1, width )
-                x2 = np.mod(head_xy[0] - 2*x_step + n*x_step + 1, width )
-                y1 = np.mod(head_xy[1] - 2*y_step + m*y_step - 1, height)
-                y2 = np.mod(head_xy[1] - 2*y_step + m*y_step + 1, height) 
+                x1 = np.mod(head_xy[0] - 2*x_step + n*x_step - 2, width)
+                x2 = np.mod(head_xy[0] - 2*x_step + n*x_step + 2, width)
+                y1 = np.mod(head_xy[1] - 2*y_step + m*y_step - 2, height)
+                y2 = np.mod(head_xy[1] - 2*y_step + m*y_step + 2, height) 
                 #print(view_space[n,m])
                 viewed_items = canvas.find_overlapping(x1, y1, x2, y2)
                 for item in viewed_items:
                     item_tags = canvas.gettags(item)
+                #canvas.create_rectangle([x1,y1],[x2,y2],fill='red',tag='view')
+                #print(item_tags)
                     if 'plant' in item_tags:
                         view_space[n,m] = 1
                     if self.name in item_tags:
@@ -185,15 +181,15 @@ def generate_board():
     nrows = int(grid_size_x.get())
     ncols = int(grid_size_y.get())
 
-    snake.grid_x = nrows
-    snake.grid_y = ncols
+    snake1.grid_x = nrows
+    snake1.grid_y = ncols
     #print(snake.grid_x)
     snake2.grid_x = nrows
     snake2.grid_y = ncols
 
 
     ''' delete and redraw snakes to match new grid size '''
-    slith = [snake,snake2]
+    slith = [snake1,snake2]
     for s in slith:
         canvas.delete(s.name)
         s.draw()
@@ -228,7 +224,7 @@ def canvas_update():
         time_string = "Time = " + str(time) 
         v.set(time_string)
 
-        snake.update_body()
+        snake1.update_body()
         snake2.update_body()
 
         '''add plant elements randomly'''
@@ -388,11 +384,11 @@ Food_Generation(p,20,20)
 
 ''' Initialize and Draw Snakes '''
 
-body = np.array([[4,6],[5,6],[6,6],[6,7],[7,7]])
-snake = Snake('jeffy',body,1)
-snake.draw()
+body = np.array([[6,6],[6,7],[6,8],[7,8]])
+snake1 = Snake('jeffy',body,1)
+snake1.draw()
 
-body2 = np.array([[7,10],[8,10],[9,10],[10,10],[11,10],[12,10]])
+body2 = np.array([[11,11],[11,12],[11,13],[12,13]])
 snake2 = Snake('snakerella',body2,1)
 snake2.draw()
 
