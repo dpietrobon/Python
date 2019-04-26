@@ -12,9 +12,11 @@ global time
 global loop_state
 global x_step
 global y_step
+global canvas_update_speed
 
 time = 0
 loop_state = 'off'
+canvas_update_speed = 100
 
 ''' SNAKE CLASS: Models a Snake on a 2D Grid Boardstate '''
 
@@ -42,6 +44,70 @@ class Snake:
                 draw_rect(elem[0],elem[1],self.color,[self.name,'snake','head'])                
             else:
                 draw_rect(elem[0],elem[1],self.color,[self.name,'snake'])
+
+    def draw_eyes(self):
+        global x_step
+        global y_step
+        eye_tag = self.name
+##        if self.body[-1][0]-self.body[-2][0] == 0 and self.body[-1][1]-self.body[-2][1] == 0:
+##            x1 = self.body[-1][0]*x_step + 0.22*x_step
+##            y1 = self.body[-1][1]*y_step + 0.22*y_step
+##            x2 = self.body[-1][0]*x_step + 0.38*x_step
+##            y2 = self.body[-1][1]*y_step + 0.38*y_step
+##            canvas.create_rectangle(x1,y1,x2,y2,fill='red',tag=eye_tag)
+##            x1 = self.body[-1][0]*x_step + 0.62*x_step
+##            y1 = self.body[-1][1]*y_step + 0.22*y_step
+##            x2 = self.body[-1][0]*x_step + 0.78*x_step
+##            y2 = self.body[-1][1]*y_step + 0.38*y_step
+##            canvas.create_rectangle(x1,y1,x2,y2,fill='red',tag=eye_tag)
+        if self.body[-1][0]-self.body[-2][0] == 0 and self.body[-1][1]-self.body[-2][1] == 1:
+            x1 = self.body[-1][0]*x_step + 0.22*x_step
+            y1 = self.body[-1][1]*y_step + 0.62*y_step
+            x2 = self.body[-1][0]*x_step + 0.38*x_step
+            y2 = self.body[-1][1]*y_step + 0.78*y_step
+            canvas.create_rectangle(x1,y1,x2,y2,fill='red',tag=eye_tag)
+            x1 = self.body[-1][0]*x_step + 0.62*x_step
+            y1 = self.body[-1][1]*y_step + 0.62*y_step
+            x2 = self.body[-1][0]*x_step + 0.78*x_step
+            y2 = self.body[-1][1]*y_step + 0.78*y_step
+            canvas.create_rectangle(x1,y1,x2,y2,fill='red',tag=eye_tag)
+        if self.body[-1][0]-self.body[-2][0] == 1 and self.body[-1][1]-self.body[-2][1] == 0:
+            x1 = self.body[-1][0]*x_step + 0.62*x_step
+            y1 = self.body[-1][1]*y_step + 0.22*y_step
+            x2 = self.body[-1][0]*x_step + 0.78*x_step
+            y2 = self.body[-1][1]*y_step + 0.38*y_step
+            canvas.create_rectangle(x1,y1,x2,y2,fill='red',tag=eye_tag)
+            x1 = self.body[-1][0]*x_step + 0.62*x_step
+            y1 = self.body[-1][1]*y_step + 0.62*y_step
+            x2 = self.body[-1][0]*x_step + 0.78*x_step
+            y2 = self.body[-1][1]*y_step + 0.78*y_step
+            canvas.create_rectangle(x1,y1,x2,y2,fill='red',tag=eye_tag)
+        if self.body[-1][0]-self.body[-2][0] == 0 and self.body[-1][1]-self.body[-2][1] == -1:
+            x1 = self.body[-1][0]*x_step + 0.22*x_step
+            y1 = self.body[-1][1]*y_step + 0.22*y_step
+            x2 = self.body[-1][0]*x_step + 0.38*x_step
+            y2 = self.body[-1][1]*y_step + 0.38*y_step
+            canvas.create_rectangle(x1,y1,x2,y2,fill='red',tag=eye_tag)
+            x1 = self.body[-1][0]*x_step + 0.62*x_step
+            y1 = self.body[-1][1]*y_step + 0.22*y_step
+            x2 = self.body[-1][0]*x_step + 0.78*x_step
+            y2 = self.body[-1][1]*y_step + 0.38*y_step
+            canvas.create_rectangle(x1,y1,x2,y2,fill='red',tag=eye_tag)
+        if self.body[-1][0]-self.body[-2][0] == -1 and self.body[-1][1]-self.body[-2][1] == 0:
+            x1 = self.body[-1][0]*x_step + 0.62*x_step
+            y1 = self.body[-1][1]*y_step + 0.22*y_step
+            x2 = self.body[-1][0]*x_step + 0.78*x_step
+            y2 = self.body[-1][1]*y_step + 0.38*y_step
+            canvas.create_rectangle(x1,y1,x2,y2,fill='red',tag=eye_tag)
+            x1 = self.body[-1][0]*x_step + 0.62*x_step
+            y1 = self.body[-1][1]*y_step + 0.62*y_step
+            x2 = self.body[-1][0]*x_step + 0.78*x_step
+            y2 = self.body[-1][1]*y_step + 0.78*y_step
+            canvas.create_rectangle(x1,y1,x2,y2,fill='red',tag=eye_tag)
+
+
+
+
             
     def eat(self):
         '''obviously we don't want to define unchanging variables inside LOOPED behaviour but c'est la vie'''
@@ -103,7 +169,8 @@ class Snake:
             print(self.name + " is " + str(self.age) + " moves old.")
             
         canvas.delete(self.name) #only need to delete the tail and draw the head
-
+        canvas.delete('eye')
+        
         body_clipped = np.delete(self.body,0,0)
             
         ''' Genetic Algorithm '''
@@ -135,6 +202,7 @@ class Snake:
 
         self.eat() #eat before draw or snake eats own head.
         self.draw()
+        self.draw_eyes()
 
         ''' view(): function test '''
 
@@ -258,6 +326,7 @@ def canvas_update():
     """ update time counter """
     global time
     global loop_state
+    global canvas_update_speed
 
     if loop_state == 'on':
         time = time + 1
@@ -270,29 +339,38 @@ def canvas_update():
         '''add plant elements randomly'''
         #ensures the board state does not run out of food for snakes to eat.
         
-        canvas.after(100,canvas_update)
+        canvas.after(canvas_update_speed,canvas_update)
 
 ''' Frame Functions '''
 # Button Toggles
 
 def toggle_play():
     global loop_state
+    global canvas_update_speed
     
     if loop_state == 'on':
         loop_state = 'off' #clicking play twice pauses the loop
-        #print(Play_Button) 
+        #print(Play_Button)
+        canvas_update_speed = 100
         Play_Button.config(relief="raised")
     else:
         loop_state = 'on'
         Play_Button.config(relief="sunken")
         canvas_update()
+
+def fast_forward():
+    global canvas_update_speed
+    canvas_update_speed = int(0.5*canvas_update_speed)
         
 
 def pause_loop():
     global loop_state
+    global canvas_update_speed
+    
     if loop_state == 'on':
         loop_state = 'off'
         Play_Button.config(relief="raised")
+        canvas_update_speed = 100
 
 ''' Initialize Root Window '''
 root = Tk()
@@ -404,7 +482,7 @@ Play_Button.pack(side='left')
 
 ''' Fast Forward Button '''
 fast_forward_img = PhotoImage(file = 'fast_forward_button.png')
-Fast_Forward_Button = Button(frame10,image=fast_forward_img,command=canvas_update,relief="raised")
+Fast_Forward_Button = Button(frame10,image=fast_forward_img,command=fast_forward,relief="raised")
 Fast_Forward_Button.pack(side='left')
 
 ''' Pause Button '''
@@ -419,16 +497,18 @@ Pause_Button.pack(side='left')
 canvas.update()
 [x_step,y_step] = grid_steps() 
 
-p = 33 # Proportion of food on boardspace
-Food_Generation(p,20,20)
+p = 33 # Initial proportion of food on canvas
+m = 20 # Initial number of rows
+n = 20 # Initial number of columns
+Food_Generation(p,m,n)
 
 ''' Initialize and Draw Snakes '''
 
-body = np.array([[4,6],[5,6],[6,6],[6,7],[7,7]])
+body = np.array([[4,6],[5,6],[6,6]])
 snake = Snake('jeffy',body,'#33CEFF')
 snake.draw()
 
-body2 = np.array([[7,10],[8,10],[9,10],[10,10],[11,10],[12,10]])
+body2 = np.array([[7,10],[8,10],[9,10]])
 snake2 = Snake('snakerella',body2,'#B953FF')
 snake2.draw()
 
