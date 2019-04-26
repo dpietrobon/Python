@@ -20,10 +20,10 @@ loop_state = 'off'
 
 class Snake:
     # Initializer / Instance Attributes
-    def __init__(self, name, body, moves): 
+    def __init__(self, name, body, color): 
         self.name = name
         self.body = body
-        self.moves = moves # as yet unused
+        self.color = color
         self.grid_x = int(grid_size_x.get())
         self.grid_y = int(grid_size_y.get())
         self.energy = 0
@@ -33,42 +33,62 @@ class Snake:
         ''' should only need to draw the head at every step. '''
         ''' moving is another option '''
         ''' simplest is to delete and redraw everything ?? '''
-        for elem in self.body:
-            draw_rect(elem[0],elem[1],'grey',self.name)
-
+        body_length_index = len(self.body)-1
+        
+        for index,elem in enumerate(self.body):
+            if index == 0:
+                draw_rect(elem[0],elem[1],self.color,[self.name,'snake','tail'])
+            elif index == body_length_index:
+                draw_rect(elem[0],elem[1],self.color,[self.name,'snake','head'])                
+            else:
+                draw_rect(elem[0],elem[1],self.color,[self.name,'snake'])
+            
     def eat(self):
         '''obviously we don't want to define unchanging variables inside LOOPED behaviour but c'est la vie'''
-        grid_x = int(grid_size_x.get())
-        grid_y = int(grid_size_y.get())
+##        grid_x = int(grid_size_x.get())
+##        grid_y = int(grid_size_y.get())
+##
+##        canvas.update()
+##        
+##        canvas_width = canvas.winfo_width()
+##        canvas_height = canvas.winfo_height()
+##
+##        rect_x = (canvas_width)/(grid_x)
+##        rect_y = (canvas_height)/(grid_y)
+##    
+##        #print(self.body[-1][0])
+##        #print(self.body[-1][0]*rect_x)
+##        #print(self.body[-1][1]*rect_y)
+##
+##        head_x = self.body[-1][0]*rect_x
+##        head_y = self.body[-1][1]*rect_y
 
-        canvas.update()
-        
-        canvas_width = canvas.winfo_width()
-        canvas_height = canvas.winfo_height()
+        global x_step
+        global y_step
 
-        rect_x = (canvas_width)/(grid_x)
-        rect_y = (canvas_height)/(grid_y)
-    
-        #print(self.body[-1][0])
-        #print(self.body[-1][0]*rect_x)
-        #print(self.body[-1][1]*rect_y)
-
-        head_x = self.body[-1][0]*rect_x
-        head_y = self.body[-1][1]*rect_y
+        [head_x,head_y] = self.head_xy(x_step,y_step)
 
         item_yolo = canvas.find_closest(head_x,head_y)
         item_tags = canvas.gettags(item_yolo)
 
         if (item_yolo and 'plant' in item_tags):
             #print(item_tags)
-            item_x = canvas.coords(item_yolo)[0]
-            item_y = canvas.coords(item_yolo)[1]
-            if (abs(head_x - item_x) < rect_x-1) and (abs(head_y - item_y) < rect_y-1): 
+            item_x = canvas.coords(item_yolo)[0] + 0.5*x_step
+            item_y = canvas.coords(item_yolo)[1] + 0.5*y_step
+            if (abs(head_x - item_x) < x_step-1) and (abs(head_y - item_y) < y_step-1): 
                 canvas.delete(item_yolo)
                 self.energy += 1
                 if (self.energy % 50 == 0):
                     print(self.name + " has eaten " + str(self.energy) + " plants.")
+                    print(self.body[-1])
+                    self.grow()
+                    
+    def grow(self):
+        ''' Adds an extra segment to snake's body '''
+        ''' Gen 01: Trigger in update_body(): after 50 pieces of food are eaten '''
+        self.body = np.append(self.body,[self.body[-1]],axis=0)
 
+        
     def head_xy(self,x_step,y_step):
         ''' Returns the xy (canvas) coordinates of the snake head... '''
         ''' cf: update_body() ''' # top-left corner
@@ -85,11 +105,6 @@ class Snake:
         canvas.delete(self.name) #only need to delete the tail and draw the head
 
         body_clipped = np.delete(self.body,0,0)
-
-        if (self.age % 500 == 0):
-            #print(self.body)
-            #print(body_clipped)
-            pass
             
         ''' Genetic Algorithm '''
         ''' Gen 01: The snake randomly selects one of the four cardinal
@@ -121,6 +136,8 @@ class Snake:
         self.eat() #eat before draw or snake eats own head.
         self.draw()
 
+        ''' view(): function test '''
+
         if (self.age % 500 == 0):
             global x_step
             global y_step
@@ -131,12 +148,13 @@ class Snake:
         
     def view(self,x_step,y_step):
         ''' creates a matrix of surrounding area (snakes visual field) '''
-        ''' gen 01: creates a 5x5 matrix: 0 for empty 1 for plant. '''
+        ''' gen 01: creates a 5x5 matrix: 0 for empty, 1 for plant, '''
+        ''' 2 for own body, 3 for other snake. '''
         view_space = np.zeros([5,5])
         head_xy = self.head_xy(x_step,y_step)
         #print(view_space)
         width = canvas.winfo_width()
-        height = canvas.winfo_width()
+        height = canvas.winfo_height()
         for n in range(0,5):
             for m in range(0,5):
                 x1 = np.mod(head_xy[0] - 2*x_step + n*x_step - 1, width )
@@ -144,13 +162,21 @@ class Snake:
                 y1 = np.mod(head_xy[1] - 2*y_step + m*y_step - 1, height)
                 y2 = np.mod(head_xy[1] - 2*y_step + m*y_step + 1, height) 
                 #print(view_space[n,m])
+                #canvas.create_rectangle([x1,y1],[(x2,y2],fill='red',tag='view')
                 viewed_items = canvas.find_overlapping(x1, y1, x2, y2)
                 for item in viewed_items:
                     item_tags = canvas.gettags(item)
+                    # needs figuring...
+                    ''' last item in the stack will take precedent '''
                     if 'plant' in item_tags:
                         view_space[n,m] = 1
+                    if 'snake' in item_tags and self.name not in item_tags:
+                        view_space[n,m] = 3
+                        break
                     if self.name in item_tags:
                         view_space[n,m] = 2
+                        break
+                    
         #print(self.body[-1])
         view_space = np.transpose(view_space)
         print(view_space)
@@ -179,17 +205,27 @@ def draw_rect(m,n,colour='grey',tagg='rect'):
         canvas.create_rectangle([(m)*(rect_x),(n)*(rect_y)],[(m+1)*(rect_x),(n+1)*(rect_y)],fill=colour,tag=tagg)
 
 def generate_board():
-    canvas.delete('plant')
-    p = int(Initial_Food_Entry.get())
+
+    global x_step
+    global y_step
+
+    canvas.update()
 
     nrows = int(grid_size_x.get())
     ncols = int(grid_size_y.get())
 
+    [x_step,y_step] = grid_steps()
+    
+    ''' necessary to resize snakes to new grid '''
     snake.grid_x = nrows
     snake.grid_y = ncols
     #print(snake.grid_x)
     snake2.grid_x = nrows
     snake2.grid_y = ncols
+    
+    
+    canvas.delete('plant')
+    p = int(Initial_Food_Entry.get())
 
 
     ''' delete and redraw snakes to match new grid size '''
@@ -209,7 +245,7 @@ def grid_xy(n,m):
     canvas_height = canvas.winfo_height()
     return [(canvas_width)/(n),(canvas_height)/(m)] # this isn't right...
 
-def grid_step_xy():
+def grid_steps():
     canvas.update()
     canvas_width = canvas.winfo_width()
     canvas_height = canvas.winfo_height()
@@ -381,7 +417,7 @@ Pause_Button.pack(side='left')
 ''' MAIN '''
 
 canvas.update()
-[x_step,y_step] = grid_step_xy() 
+[x_step,y_step] = grid_steps() 
 
 p = 33 # Proportion of food on boardspace
 Food_Generation(p,20,20)
@@ -389,11 +425,11 @@ Food_Generation(p,20,20)
 ''' Initialize and Draw Snakes '''
 
 body = np.array([[4,6],[5,6],[6,6],[6,7],[7,7]])
-snake = Snake('jeffy',body,1)
+snake = Snake('jeffy',body,'#33CEFF')
 snake.draw()
 
 body2 = np.array([[7,10],[8,10],[9,10],[10,10],[11,10],[12,10]])
-snake2 = Snake('snakerella',body2,1)
+snake2 = Snake('snakerella',body2,'#B953FF')
 snake2.draw()
 
 canvas.update()
