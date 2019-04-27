@@ -139,7 +139,7 @@ class Snake:
             item_y = canvas.coords(item_near)[1] + 0.5*y_step
             if (abs(head_x - item_x) < x_step-1) and (abs(head_y - item_y) < y_step-1): 
                 canvas.delete(item_near)
-                self.energy += 10
+                self.energy += 5
                 self.food_eaten += 1
                 ''' every 30 food eaten snake grows '''
                 if self.food_eaten % 30 == 0:
@@ -214,7 +214,7 @@ class Snake:
             global y_step
             self.view(x_step,y_step)
             #print(self.head_xy(x_step,y_step))
-            pause_loop()
+            #pause_loop()
 
         if (time % 100 == 0):
             print(self.name + " has " + str(self.energy) + " energy")
@@ -281,6 +281,14 @@ def draw_rect(m,n,colour='grey',tagg='rect'):
         [rect_x,rect_y] = grid_xy(grid_x,grid_y)
         canvas.create_rectangle([(m)*(rect_x),(n)*(rect_y)],[(m+1)*(rect_x),(n+1)*(rect_y)],fill=colour,tag=tagg)
 
+def food_grow():
+    ''' every 10 frames add three foods... '''
+    n = int(grid_size_x.get())
+    m = int(grid_size_y.get())
+    a = random.randint(0,n)
+    b = random.randint(0,m)
+    draw_plant(a,b)
+
 def generate_board():
 
     global x_step
@@ -346,9 +354,13 @@ def canvas_update():
             snake.update_body()
         if snake2.state == 'alive':
             snake2.update_body()
+        if snake.state == 'dead' and snake2.state == 'dead':
+            pause_loop()
 
         '''add plant elements randomly'''
         #ensures the board state does not run out of food for snakes to eat.
+        if time % 12 in [0,4,8]:
+            food_grow()
         
         canvas.after(canvas_update_speed,canvas_update)
 
@@ -368,6 +380,10 @@ def toggle_play():
         loop_state = 'on'
         Play_Button.config(relief="sunken")
         canvas_update()
+
+def slow_loop():
+    global canvas_update_speed
+    canvas_update_speed = int(2*canvas_update_speed)
 
 def fast_forward():
     global canvas_update_speed
@@ -460,6 +476,14 @@ grid_size_y.pack(side='left')
 ##ToggleGrid_Button = Button(frame_gridbutton, width=12, text="Toggle Grid", command=DrawGrid)
 ##ToggleGrid_Button.pack(side='bottom')
 
+''' Food Growth - Label & Entry '''
+Food_Growth = Label(frame6, text="Food Growth = ")
+Food_Growth.pack(side='left')
+
+Food_Growth_Entry = Entry(frame6,width=2)
+Food_Growth_Entry.insert(0,'10')
+Food_Growth_Entry.pack(side='left')
+
 ''' Food Generation - Label & Entry '''
 Initial_Food = Label(frame7, text="Initial Food = ")
 Initial_Food.pack(side='left')
@@ -486,12 +510,18 @@ Board_Set_Button.pack()
 ##Num_Snake_Label = Label(frame9,text="Number of Snakes: ").pack(side='left')
 ##Num_Snakes_Entry = Entry(frame9,width=2).pack(side='left')
 
+##''' Slow Button '''
+##slow_image = PhotoImage(file = 'slow_button.png')
+##Slow_Button = Button(frame10,image=slow_image,command=slow_loop,relief="raised")
+##Slow_Button.pack(side='left')
+
 ''' Play Button '''
 play_image = PhotoImage(file = 'play_button.png')
 Play_Button = Button(frame10,image=play_image,command=toggle_play,relief="raised")
 Play_Button.pack(side='left')
 
 ''' Fast Forward Button '''
+# Maybe better in terms of game enjoyability to have NO FF ??
 fast_forward_img = PhotoImage(file = 'fast_forward_button.png')
 Fast_Forward_Button = Button(frame10,image=fast_forward_img,command=fast_forward,relief="raised")
 Fast_Forward_Button.pack(side='left')
