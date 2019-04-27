@@ -21,16 +21,25 @@ canvas_update_speed = 100
 ''' SNAKE CLASS: Models a Snake on a 2D Grid Boardstate '''
 
 class Snake:
-    # Initializer / Instance Attributes
+    ''' Initialize Instance Attributes '''
     def __init__(self, name, body, color): 
         self.name = name
         self.body = body
         self.color = color
         self.grid_x = int(grid_size_x.get())
         self.grid_y = int(grid_size_y.get())
-        self.energy = 0
+        self.energy = 300
         self.age = 0
+        self.food_eaten = 0
+        self.state = 'alive'
         
+    def die(self):
+        for elem in self.body:
+            draw_plant(elem[0],elem[1])
+            
+        print(self.name + " has died. ")
+        self.state = 'dead'
+
     def draw(self):
         ''' should only need to draw the head at every step. '''
         ''' moving is another option '''
@@ -45,10 +54,14 @@ class Snake:
             else:
                 draw_rect(elem[0],elem[1],self.color,[self.name,'snake'])
 
+    ''' All this just to draw eyes on the head as it moves.'''
+    # It's a goddamn eyesore lmao.
     def draw_eyes(self):
         global x_step
         global y_step
         eye_tag = self.name
+        eye_fill = 'black'
+        ''' if: snake doesn't move '''
 ##        if self.body[-1][0]-self.body[-2][0] == 0 and self.body[-1][1]-self.body[-2][1] == 0:
 ##            x1 = self.body[-1][0]*x_step + 0.22*x_step
 ##            y1 = self.body[-1][1]*y_step + 0.22*y_step
@@ -60,93 +73,76 @@ class Snake:
 ##            x2 = self.body[-1][0]*x_step + 0.78*x_step
 ##            y2 = self.body[-1][1]*y_step + 0.38*y_step
 ##            canvas.create_rectangle(x1,y1,x2,y2,fill='red',tag=eye_tag)
+        ''' snake goes up'''
         if self.body[-1][0]-self.body[-2][0] == 0 and self.body[-1][1]-self.body[-2][1] == 1:
             x1 = self.body[-1][0]*x_step + 0.22*x_step
             y1 = self.body[-1][1]*y_step + 0.62*y_step
             x2 = self.body[-1][0]*x_step + 0.38*x_step
             y2 = self.body[-1][1]*y_step + 0.78*y_step
-            canvas.create_rectangle(x1,y1,x2,y2,fill='red',tag=eye_tag)
+            canvas.create_rectangle(x1,y1,x2,y2,fill=eye_fill,tag=eye_tag)
             x1 = self.body[-1][0]*x_step + 0.62*x_step
             y1 = self.body[-1][1]*y_step + 0.62*y_step
             x2 = self.body[-1][0]*x_step + 0.78*x_step
             y2 = self.body[-1][1]*y_step + 0.78*y_step
-            canvas.create_rectangle(x1,y1,x2,y2,fill='red',tag=eye_tag)
+            canvas.create_rectangle(x1,y1,x2,y2,fill=eye_fill,tag=eye_tag)
+        ''' snake goes right '''
         if self.body[-1][0]-self.body[-2][0] == 1 and self.body[-1][1]-self.body[-2][1] == 0:
             x1 = self.body[-1][0]*x_step + 0.62*x_step
             y1 = self.body[-1][1]*y_step + 0.22*y_step
             x2 = self.body[-1][0]*x_step + 0.78*x_step
             y2 = self.body[-1][1]*y_step + 0.38*y_step
-            canvas.create_rectangle(x1,y1,x2,y2,fill='red',tag=eye_tag)
+            canvas.create_rectangle(x1,y1,x2,y2,fill=eye_fill,tag=eye_tag)
             x1 = self.body[-1][0]*x_step + 0.62*x_step
             y1 = self.body[-1][1]*y_step + 0.62*y_step
             x2 = self.body[-1][0]*x_step + 0.78*x_step
             y2 = self.body[-1][1]*y_step + 0.78*y_step
-            canvas.create_rectangle(x1,y1,x2,y2,fill='red',tag=eye_tag)
+            canvas.create_rectangle(x1,y1,x2,y2,fill=eye_fill,tag=eye_tag)
+        ''' snake goes down'''
         if self.body[-1][0]-self.body[-2][0] == 0 and self.body[-1][1]-self.body[-2][1] == -1:
             x1 = self.body[-1][0]*x_step + 0.22*x_step
             y1 = self.body[-1][1]*y_step + 0.22*y_step
             x2 = self.body[-1][0]*x_step + 0.38*x_step
             y2 = self.body[-1][1]*y_step + 0.38*y_step
-            canvas.create_rectangle(x1,y1,x2,y2,fill='red',tag=eye_tag)
+            canvas.create_rectangle(x1,y1,x2,y2,fill=eye_fill,tag=eye_tag)
             x1 = self.body[-1][0]*x_step + 0.62*x_step
             y1 = self.body[-1][1]*y_step + 0.22*y_step
             x2 = self.body[-1][0]*x_step + 0.78*x_step
             y2 = self.body[-1][1]*y_step + 0.38*y_step
-            canvas.create_rectangle(x1,y1,x2,y2,fill='red',tag=eye_tag)
+            canvas.create_rectangle(x1,y1,x2,y2,fill=eye_fill,tag=eye_tag)
+        ''' snake goes left '''
         if self.body[-1][0]-self.body[-2][0] == -1 and self.body[-1][1]-self.body[-2][1] == 0:
-            x1 = self.body[-1][0]*x_step + 0.62*x_step
+            x1 = self.body[-1][0]*x_step + 0.22*x_step
             y1 = self.body[-1][1]*y_step + 0.22*y_step
-            x2 = self.body[-1][0]*x_step + 0.78*x_step
+            x2 = self.body[-1][0]*x_step + 0.38*x_step
             y2 = self.body[-1][1]*y_step + 0.38*y_step
-            canvas.create_rectangle(x1,y1,x2,y2,fill='red',tag=eye_tag)
-            x1 = self.body[-1][0]*x_step + 0.62*x_step
+            canvas.create_rectangle(x1,y1,x2,y2,fill=eye_fill,tag=eye_tag)
+            x1 = self.body[-1][0]*x_step + 0.22*x_step
             y1 = self.body[-1][1]*y_step + 0.62*y_step
-            x2 = self.body[-1][0]*x_step + 0.78*x_step
+            x2 = self.body[-1][0]*x_step + 0.38*x_step
             y2 = self.body[-1][1]*y_step + 0.78*y_step
-            canvas.create_rectangle(x1,y1,x2,y2,fill='red',tag=eye_tag)
-
-
-
-
+            canvas.create_rectangle(x1,y1,x2,y2,fill=eye_fill,tag=eye_tag)
             
     def eat(self):
-        '''obviously we don't want to define unchanging variables inside LOOPED behaviour but c'est la vie'''
-##        grid_x = int(grid_size_x.get())
-##        grid_y = int(grid_size_y.get())
-##
-##        canvas.update()
-##        
-##        canvas_width = canvas.winfo_width()
-##        canvas_height = canvas.winfo_height()
-##
-##        rect_x = (canvas_width)/(grid_x)
-##        rect_y = (canvas_height)/(grid_y)
-##    
-##        #print(self.body[-1][0])
-##        #print(self.body[-1][0]*rect_x)
-##        #print(self.body[-1][1]*rect_y)
-##
-##        head_x = self.body[-1][0]*rect_x
-##        head_y = self.body[-1][1]*rect_y
-
+        ''' Don't define unchanging variables inside looped behaviour... '''
         global x_step
         global y_step
+        global time
 
         [head_x,head_y] = self.head_xy(x_step,y_step)
 
-        item_yolo = canvas.find_closest(head_x,head_y)
-        item_tags = canvas.gettags(item_yolo)
+        item_near = canvas.find_closest(head_x,head_y)
+        item_tags = canvas.gettags(item_near)
 
-        if (item_yolo and 'plant' in item_tags):
+        if (item_near and 'plant' in item_tags):
             #print(item_tags)
-            item_x = canvas.coords(item_yolo)[0] + 0.5*x_step
-            item_y = canvas.coords(item_yolo)[1] + 0.5*y_step
+            item_x = canvas.coords(item_near)[0] + 0.5*x_step
+            item_y = canvas.coords(item_near)[1] + 0.5*y_step
             if (abs(head_x - item_x) < x_step-1) and (abs(head_y - item_y) < y_step-1): 
-                canvas.delete(item_yolo)
-                self.energy += 1
-                if (self.energy % 50 == 0):
-                    print(self.name + " has eaten " + str(self.energy) + " plants.")
-                    print(self.body[-1])
+                canvas.delete(item_near)
+                self.energy += 10
+                self.food_eaten += 1
+                ''' every 30 food eaten snake grows '''
+                if self.food_eaten % 30 == 0:
                     self.grow()
                     
     def grow(self):
@@ -167,6 +163,9 @@ class Snake:
         self.age += 1
         if (self.age % 1000 == 0):
             print(self.name + " is " + str(self.age) + " moves old.")
+
+        if self.age % 50 == 0:
+            print(self.name + " has " + str(self.energy) + " energy.")
             
         canvas.delete(self.name) #only need to delete the tail and draw the head
         canvas.delete('eye')
@@ -181,12 +180,16 @@ class Snake:
     
         if rand_int < 20:
             c = np.mod(body_clipped[-1]+[1,0],[self.grid_x,self.grid_y])
+            self.energy += -1
         if (20 <= rand_int < 40):
             c = np.mod(body_clipped[-1]-[0,1],[self.grid_x,self.grid_y])
+            self.energy += -1
         if (40 <= rand_int < 60):
             c = np.mod(body_clipped[-1]-[1,0],[self.grid_x,self.grid_y])
+            self.energy += -1
         if (60 <= rand_int <= 80):
             c = np.mod(body_clipped[-1]+[0,1],[self.grid_x,self.grid_y])
+            self.energy += -1
         if (80 <= rand_int <= 100):
             c = body_clipped[-1]
         
@@ -212,6 +215,12 @@ class Snake:
             self.view(x_step,y_step)
             #print(self.head_xy(x_step,y_step))
             pause_loop()
+
+        if (time % 100 == 0):
+            print(self.name + " has " + str(self.energy) + " energy")
+
+        if self.energy < 0:
+            self.die()
 
         
     def view(self,x_step,y_step):
@@ -333,8 +342,10 @@ def canvas_update():
         time_string = "Time = " + str(time) 
         v.set(time_string)
 
-        snake.update_body()
-        snake2.update_body()
+        if snake.state == 'alive':
+            snake.update_body()
+        if snake2.state == 'alive':
+            snake2.update_body()
 
         '''add plant elements randomly'''
         #ensures the board state does not run out of food for snakes to eat.
