@@ -8,13 +8,16 @@ import random
 
 ''' Global Variables and Initializations '''
 
-global time
+global canvas_update_speed
+global left_mouse_down
 global loop_state
+global snake_string
+global time
 global x_step
 global y_step
-global canvas_update_speed
 
 time = 0
+left_mouse_down = False
 loop_state = 'off'
 canvas_update_speed = 100
 
@@ -32,6 +35,7 @@ class Snake:
         self.age = 0
         self.food_eaten = 0
         self.state = 'alive'
+        self.head = self.head_pixel()
         
     def die(self):
         for elem in self.body:
@@ -152,6 +156,16 @@ class Snake:
         self.body = np.append(self.body,[self.body[-1]],axis=0)
 
         
+    def head_pixel(self):
+        ''' Generates unique 5x5 pixel art for the snake head. '''
+        head_array = np.zeros([5,5])
+        for n in range(5):
+            for m in range(5):
+                r = random.randint(1,100)
+                if r <= 50:
+                    head_array[n,m] = 1
+        print(head_array)
+        
     def head_xy(self,x_step,y_step):
         ''' Returns the xy (canvas) coordinates of the snake head... '''
         ''' cf: update_body() ''' # top-left corner
@@ -261,12 +275,12 @@ class Snake:
 ### END of Snake Class ###
 
 ''' General Purpose Functions '''
-    
-def initial_food_generation(p,row,col): 
-    for n in range(0,row):
-        for m in range(0,col):
-            if random.randint(0,100) < p:
-                draw_plant(n,m)
+
+def board_regen(event):
+    global left_mouse_down
+
+    if left_mouse_down == False:
+        generate_board()
 
 def draw_plant(m,n):
     draw_rect(m,n,'green','plant')
@@ -297,8 +311,12 @@ def generate_board():
 
     canvas.update()
 
-    nrows = int(grid_size_x.get())
-    ncols = int(grid_size_y.get())
+    if int(grid_size_x.get()) and int(grid_size_y.get()):
+        nrows = int(grid_size_x.get())
+        ncols = int(grid_size_y.get())
+    else:
+        nrows = 20
+        ncols = 20
 
     [x_step,y_step] = grid_steps()
     
@@ -338,6 +356,12 @@ def grid_steps():
     n = int(grid_size_x.get())
     m = int(grid_size_y.get())
     return [(canvas_width)/(n),(canvas_height)/(m)]
+
+def initial_food_generation(p,row,col): 
+    for n in range(0,row):
+        for m in range(0,col):
+            if random.randint(0,100) < p:
+                draw_plant(n,m)
     
 
 def canvas_update():
@@ -366,10 +390,26 @@ def canvas_update():
         canvas.after(canvas_update_speed,canvas_update)
 
 def click_canvas(event):
-    item = event.widget.find_withtag("current")
-    itag = canvas.gettags(item)
-    print(itag)
+    global snake_string
+    global left_mouse_down
 
+    left_mouse_down = True
+    
+    item = event.widget.find_withtag("current")
+    itags = canvas.gettags(item)
+    print(itags)
+
+    slither = [snake,snake2]
+    for s in slither:
+        if s.name in itags:
+            snake_string = s.name
+            w.set(snake_string)
+
+def mouse_up(event):
+    global left_mouse_down
+    left_mouse_down = False
+    print('Release!')
+    
 ''' Frame Functions '''
 # Button Toggles
 
@@ -407,8 +447,9 @@ def pause_loop():
 
 ''' Initialize Root Window '''
 root = Tk()
-root.title("Snake Game: Genetic Evolution")
+root.title("Snake Game")
 root.config(padx=5,pady=5)
+root.bind('<ButtonRelease-1>',mouse_up)
 
 ''' Get user's current screen resolution '''
 screen_width = root.winfo_screenwidth()
@@ -425,62 +466,69 @@ root.geometry(str_geometry)
 
 ''' Frames - Mostly for Sidebar GUI '''
 
-# A A1
-# B  X
-#    Y
-#    Z
+# A1 BX
+# A2 BY
+#    BZ
 
 frameA = Frame(root)
-frameA.pack(expand=True,fill=BOTH)
+frameA.pack(expand=True,fill=BOTH,side='left')
 
-frameA1 = Frame(frameA)
-frameA1.pack(side='right')
+frameA1 = Frame(frameA,bd=1,relief='solid')
+frameA1.pack(expand=True,fill=BOTH)
 
-frameX = Frame(frameA1)
-frameX.pack(side='bottom')
+frameA2 = Frame(frameA,bd=1,bg='white',relief='solid')
+frameA2.pack(fill=X)
 
-frameY = Frame(frameA1)
-frameY.pack(side='bottom')
-
-frameZ = Frame(frameA1)
-frameZ.pack()
-
-frameZ1 = Frame(frameA1)
-frameZ1.pack()
-
-frameZ2 = Frame(frameA1)
-frameZ2.pack()
-
-frameZ3 = Frame(frameA1)
-frameZ3.pack()
+frameB = Frame(root,bd=1,bg='white',relief='solid')
+frameB.pack(fill=Y,side='left')
 
 ''' Initialize Canvas '''
-canvas = Canvas(frameA,width=300,height=300,bg="white",bd=1,relief="solid")
-canvas.bind("<Button-1>", click_canvas)
+canvas = Canvas(frameA1,width=300,height=300,bg='white',bd=1,relief='solid')
+canvas.bind('<Button-1>', click_canvas)
+canvas.bind('<Configure>',board_regen)
 canvas.pack(expand=True,fill=BOTH,side='left')
 
-''' Frame Below Canvas'''
-frameB = Frame(root,bg='grey',bd=1)
-frameB.pack(fill=BOTH)
+''' Snake Head CANVAS? Frame '''
+snakehead_canvas = Canvas(frameA2,width=60,height=60,bd=1,relief='solid')
+snakehead_canvas.pack(side='left')
 
 ''' Snake Label Below Canvas '''
 w = StringVar()
-Snake_Label = Label(frameB,textvariable=w)
-Snake_Label.pack()
+Snake_Label = Label(frameA2,textvariable=w)
+Snake_Label.pack(expand=True,fill=BOTH,side='top')
 snake_string = " ... " 
 w.set(snake_string)
 
+''' Frames On Right Side '''
+frameX = Frame(frameB)
+frameX.pack(side='bottom')
+
+frameY = Frame(frameB)
+frameY.pack(side='bottom')
+
+frameZ = Frame(frameB)
+frameZ.pack()
+
+frameZ1 = Frame(frameB)
+frameZ1.pack()
+
+frameZ2 = Frame(frameB)
+frameZ2.pack()
+
+frameZ3 = Frame(frameB)
+frameZ3.pack()
+
 ''' Draw Grid - Entry Fields & Labels '''
-Grid_Num_Rows = Label(frameA1,text="Grid Size = ")
+Grid_Num_Rows = Label(frameB,text="Grid Size = ")
 Grid_Num_Rows.pack(side='left')
 
-grid_size_x = Entry(frameA1,width=3)
+grid_size_x = Entry(frameB,width=3)
 grid_size_x.insert(10,'20')
 grid_size_x.pack(side='left')
 
-Grid_Label_x = Label(frameA1,text="×").pack(side='left')
+Grid_Label_x = Label(frameB,text="×").pack(side='left')
 
-grid_size_y = Entry(frameA1,width=3)
+grid_size_y = Entry(frameB,width=3)
 grid_size_y.insert(0,'20')
 grid_size_y.pack(side='left')
 
@@ -491,31 +539,31 @@ grid_size_y.pack(side='left')
 ##ToggleGrid_Button.pack(side='bottom')
 
 ''' Food Growth - Label & Entry '''
-Food_Growth = Label(frameZ, text="Food Growth = ")
+Food_Growth = Label(frameX, text="Food Growth = ")
 Food_Growth.pack(side='left')
 
-Food_Growth_Entry = Entry(frameZ,width=2)
+Food_Growth_Entry = Entry(frameX,width=2)
 Food_Growth_Entry.insert(0,'10')
 Food_Growth_Entry.pack(side='left')
 
 ''' Food Generation - Label & Entry '''
-Initial_Food = Label(frameZ1, text="Initial Food = ")
+Initial_Food = Label(frameY, text="Initial Food = ")
 Initial_Food.pack(side='left')
 
-Initial_Food_Entry = Entry(frameZ1,width=2)
+Initial_Food_Entry = Entry(frameY,width=2)
 Initial_Food_Entry.insert(0,'33')
 Initial_Food_Entry.pack(side='left')
 
-Food_Label_2 = Label(frameZ1,text="%").pack(side='left')
+Food_Label_2 = Label(frameY,text="%").pack(side='left')
 
 ''' Time Step Counter and Label '''
 v = StringVar()
-Time_Step_Label = Label(frameY, textvariable=v).pack()
+Time_Step_Label = Label(frameZ, textvariable=v).pack()
 time_string = "Time = " + str(time) 
 v.set(time_string)
 
 ''' Boardstate Generation Button '''
-Board_Set_Button = Button(frameZ3,text="Generate Board",command=generate_board) 
+Board_Set_Button = Button(frameZ1,text="Generate Board",command=generate_board) 
 Board_Set_Button.pack()
 
 ''' Number of Snakes - Label and Entry Field '''
@@ -530,18 +578,18 @@ Board_Set_Button.pack()
 
 ''' Play Button '''
 play_image = PhotoImage(file = 'play_button.png')
-Play_Button = Button(frameX,image=play_image,command=toggle_play,relief="raised")
+Play_Button = Button(frameZ2,image=play_image,command=toggle_play,relief="raised")
 Play_Button.pack(side='left')
 
 ''' Fast Forward Button '''
 # Maybe better in terms of game enjoyability to have NO FF ??
 fast_forward_img = PhotoImage(file = 'fast_forward_button.png')
-Fast_Forward_Button = Button(frameX,image=fast_forward_img,command=fast_forward,relief="raised")
+Fast_Forward_Button = Button(frameZ2,image=fast_forward_img,command=fast_forward,relief="raised")
 Fast_Forward_Button.pack(side='left')
 
 ''' Pause Button '''
 pause_image = PhotoImage(file = 'pause_button.png')
-Pause_Button = Button(frameX,image=pause_image,command=pause_loop)
+Pause_Button = Button(frameZ2,image=pause_image,command=pause_loop)
 Pause_Button.pack(side='left')
 
 
