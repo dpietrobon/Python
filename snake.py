@@ -5,6 +5,7 @@
 from tkinter import *
 import numpy as np
 import random
+import time as tm
 
 ''' Global Variables and Initializations '''
 
@@ -21,7 +22,7 @@ left_mouse_down = False
 loop_state = 'off'
 canvas_update_speed = 100
 
-''' SNAKE CLASS: Models a Snake on a 2D Grid Boardstate '''
+''' SNAKE CLASS: Models Snake Object on Rectangular Grid '''
 
 class Snake:
     ''' Initialize Instance Attributes '''
@@ -164,7 +165,7 @@ class Snake:
                 r = random.randint(1,100)
                 if r <= 50:
                     head_array[n,m] = 1
-        print(head_array)
+        return head_array
         
     def head_xy(self,x_step,y_step):
         ''' Returns the xy (canvas) coordinates of the snake head... '''
@@ -278,9 +279,13 @@ class Snake:
 
 def board_regen(event):
     global left_mouse_down
+    global time
 
+    tm.sleep(0.1)
+
+    # Doesn't work in the situation where we 'let go' of the resizing mouse...
     if left_mouse_down == False:
-        generate_board()
+            generate_board()
 
 def draw_plant(m,n):
     draw_rect(m,n,'green','plant')
@@ -305,7 +310,6 @@ def food_grow():
     draw_plant(a,b)
 
 def generate_board():
-
     global x_step
     global y_step
 
@@ -321,11 +325,13 @@ def generate_board():
     [x_step,y_step] = grid_steps()
     
     ''' necessary to resize snakes to new grid '''
-    snake.grid_x = nrows
-    snake.grid_y = ncols
+    if snake:
+        snake.grid_x = nrows
+        snake.grid_y = ncols
     #print(snake.grid_x)
-    snake2.grid_x = nrows
-    snake2.grid_y = ncols
+    if snake2:
+        snake2.grid_x = nrows
+        snake2.grid_y = ncols
     
     
     canvas.delete('plant')
@@ -397,7 +403,7 @@ def click_canvas(event):
     
     item = event.widget.find_withtag("current")
     itags = canvas.gettags(item)
-    print(itags)
+    #print(itags)
 
     slither = [snake,snake2]
     for s in slither:
@@ -405,10 +411,18 @@ def click_canvas(event):
             snake_string = s.name
             w.set(snake_string)
 
+    if 'plant' in itags:
+        w.set('plant')
+
+def mouse_down(event):
+    global left_mouse_down
+    left_mouse_down = True
+    #print('Left mouse down')
+
 def mouse_up(event):
     global left_mouse_down
     left_mouse_down = False
-    print('Release!')
+    #print('Release!')
     
 ''' Frame Functions '''
 # Button Toggles
@@ -449,7 +463,8 @@ def pause_loop():
 root = Tk()
 root.title("Snake Game")
 root.config(padx=5,pady=5)
-root.bind('<ButtonRelease-1>',mouse_up)
+root.bind_all('<ButtonRelease-1>',mouse_up)
+root.bind_all('<Button-1>',mouse_down)
 
 ''' Get user's current screen resolution '''
 screen_width = root.winfo_screenwidth()
@@ -461,7 +476,6 @@ padded_h = screen_height - 200  # Aesthetic for initial launch of program.
 str_geometry = "%dx%d" % (padded_w,padded_h)
 
 root.geometry(str_geometry)
-
 
 
 ''' Frames - Mostly for Sidebar GUI '''
@@ -501,10 +515,10 @@ w.set(snake_string)
 
 ''' Frames On Right Side '''
 frameX = Frame(frameB)
-frameX.pack(side='bottom')
+frameX.pack()
 
 frameY = Frame(frameB)
-frameY.pack(side='bottom')
+frameY.pack()
 
 frameZ = Frame(frameB)
 frameZ.pack()
@@ -592,9 +606,10 @@ pause_image = PhotoImage(file = 'pause_button.png')
 Pause_Button = Button(frameZ2,image=pause_image,command=pause_loop)
 Pause_Button.pack(side='left')
 
-
+'''      ''' 
 ### Main ###
 ''' MAIN '''
+###      ###
 
 canvas.update()
 [x_step,y_step] = grid_steps() 
