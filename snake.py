@@ -22,6 +22,11 @@ left_mouse_down = False
 loop_state = 'off'
 canvas_update_speed = 100
 
+class Plant:
+    def __init__(self, body):
+        self.body = body
+        self.age = 0
+
 ''' SNAKE CLASS: Models Snake Object on Rectangular Grid '''
 
 class Snake:
@@ -408,9 +413,26 @@ def click_canvas(event):
     slither = [snake,snake2]
     for s in slither:
         if s.name in itags:
+            s_canvas.delete('pixel')
+            scan_width = s_canvas.winfo_width()
+            scan_height = s_canvas.winfo_height()
+            xstep = scan_width/5
+            ystep = scan_height/5
             snake_string = s.name
-            w.set(snake_string)
-
+            w.set("Snake: " + snake_string + "\n Age: " + str(s.age) + "\n Energy: " + str(s.energy))
+            for n in range(5):
+                for m in range(5):
+                    x1 = n*xstep
+                    y1 = m*ystep
+                    x2 = (n+1)*xstep
+                    y2 = (m+1)*ystep
+                    if [n,m]==[1,1] or [n,m]==[3,1]:
+                        s_canvas.create_rectangle(x1,y1,x2,y2,fill='red',tag='pixel')
+                    elif s.head[n,m]==1:
+                        s_canvas.create_rectangle(x1,y1,x2,y2,fill='black',tag='pixel')
+                    elif s.head[n,m]==0:
+                        s_canvas.create_rectangle(x1,y1,x2,y2,fill=s.color,tag='pixel')
+            
     if 'plant' in itags:
         w.set('plant')
 
@@ -499,12 +521,12 @@ frameB.pack(fill=Y,side='left')
 ''' Initialize Canvas '''
 canvas = Canvas(frameA1,width=300,height=300,bg='white',bd=1,relief='solid')
 canvas.bind('<Button-1>', click_canvas)
-canvas.bind('<Configure>',board_regen)
+# canvas.bind('<Configure>',board_regen) # WAY too memory intense atm.
 canvas.pack(expand=True,fill=BOTH,side='left')
 
 ''' Snake Head CANVAS? Frame '''
-snakehead_canvas = Canvas(frameA2,width=60,height=60,bd=1,relief='solid')
-snakehead_canvas.pack(side='left')
+s_canvas = Canvas(frameA2,width=60,height=60,bd=1,relief='solid')
+s_canvas.pack(side='left')
 
 ''' Snake Label Below Canvas '''
 w = StringVar()
@@ -622,11 +644,11 @@ initial_food_generation(p,m,n)
 ''' Initialize and Draw Snakes '''
 
 body = np.array([[4,6],[5,6],[6,6]])
-snake = Snake('jeffy',body,'#33CEFF')
+snake = Snake('Jeff_Sr.',body,'#33CEFF')
 snake.draw()
 
 body2 = np.array([[7,10],[8,10],[9,10]])
-snake2 = Snake('snakerella',body2,'#B953FF')
+snake2 = Snake('Snakerella',body2,'#B953FF')
 snake2.draw()
 
 canvas.update()
