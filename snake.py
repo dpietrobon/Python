@@ -27,6 +27,9 @@ class Plant:
         self.body = body
         self.age = 0
 
+    def grow(self):
+        '''Grows outward from initial position ... '''
+
 ''' SNAKE CLASS: Models Snake Object on Rectangular Grid '''
 
 class Snake:
@@ -314,44 +317,6 @@ def food_grow():
     b = random.randint(0,m)
     draw_plant(a,b)
 
-def generate_board():
-    global x_step
-    global y_step
-
-    canvas.update()
-
-    if int(grid_size_x.get()) and int(grid_size_y.get()):
-        nrows = int(grid_size_x.get())
-        ncols = int(grid_size_y.get())
-    else:
-        nrows = 20
-        ncols = 20
-
-    [x_step,y_step] = grid_steps()
-    
-    ''' necessary to resize snakes to new grid '''
-    if snake:
-        snake.grid_x = nrows
-        snake.grid_y = ncols
-    #print(snake.grid_x)
-    if snake2:
-        snake2.grid_x = nrows
-        snake2.grid_y = ncols
-    
-    
-    canvas.delete('plant')
-    p = int(Initial_Food_Entry.get())
-
-
-    ''' delete and redraw snakes to match new grid size '''
-    slith = [snake,snake2]
-    for s in slith:
-        canvas.delete(s.name)
-        s.draw()
-    
-    #DrawGrid(nrows,ncols)
-    initial_food_generation(p,nrows,ncols)
-
 def grid_xy(n,m):
     ''' Returns x and y (Cartesian) canvas coordinates '''
     ''' Given grid-size (n x m) '''
@@ -435,6 +400,7 @@ def click_canvas(event):
             
     if 'plant' in itags:
         w.set('plant')
+        s_canvas.delete('all')
 
 def mouse_down(event):
     global left_mouse_down
@@ -506,13 +472,13 @@ root.geometry(str_geometry)
 # A2 BY
 #    BZ
 
-frameA = Frame(root)
+frameA = Frame(root,bd=1,relief='solid')
 frameA.pack(expand=True,fill=BOTH,side='left')
 
 frameA1 = Frame(frameA,bd=1,relief='solid')
 frameA1.pack(expand=True,fill=BOTH)
 
-frameA2 = Frame(frameA,bd=1,bg='white',relief='solid')
+frameA2 = Frame(frameA,bd=1,relief='solid')
 frameA2.pack(fill=X)
 
 frameB = Frame(root,bd=1,bg='white',relief='solid')
@@ -526,11 +492,11 @@ canvas.pack(expand=True,fill=BOTH,side='left')
 
 ''' Snake Head CANVAS? Frame '''
 s_canvas = Canvas(frameA2,width=60,height=60,bd=1,relief='solid')
-s_canvas.pack(side='left')
+s_canvas.pack(side='left',padx=20)
 
 ''' Snake Label Below Canvas '''
 w = StringVar()
-Snake_Label = Label(frameA2,textvariable=w)
+Snake_Label = Label(frameA2,textvariable=w,bd=1,relief='solid')
 Snake_Label.pack(expand=True,fill=BOTH,side='top')
 snake_string = " ... " 
 w.set(snake_string)
@@ -599,8 +565,8 @@ time_string = "Time = " + str(time)
 v.set(time_string)
 
 ''' Boardstate Generation Button '''
-Board_Set_Button = Button(frameZ1,text="Generate Board",command=generate_board) 
-Board_Set_Button.pack()
+##Board_Set_Button = Button(frameZ1,text="Generate Board",command=generate_board) 
+##Board_Set_Button.pack()
 
 ''' Number of Snakes - Label and Entry Field '''
 
