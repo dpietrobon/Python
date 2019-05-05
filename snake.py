@@ -1,6 +1,5 @@
 ''' Genetic Program and Algorithm Test Design '''
 ''' 2D Implementation and GUI '''
-### Working Title: Snakes on a (Cartesian) Plane ###
 
 from tkinter import *
 import numpy as np
@@ -11,16 +10,19 @@ import time as tm
 
 global canvas_update_speed
 global left_mouse_down
-global loop_state
+global loop_active
 global snake_string
 global time
 global x_step
 global y_step
+global snake_display
 
-time = 0
-left_mouse_down = False
-loop_state = 'off'
 canvas_update_speed = 100
+left_mouse_down = False
+loop_active = False
+snake_display = False
+time = 0
+
 
 class Plant:
     def __init__(self, body):
@@ -34,10 +36,11 @@ class Plant:
 
 class Snake:
     ''' Initialize Instance Attributes '''
-    def __init__(self, name, body, color): 
+    def __init__(self, name, body, color, fear): 
         self.name = name
         self.body = body
         self.color = color
+        self.fear = fear
         self.grid_x = int(grid_size_x.get())
         self.grid_y = int(grid_size_y.get())
         self.energy = 300
@@ -184,38 +187,66 @@ class Snake:
         
         
     def update_body(self):
+        global x_step
+        global y_step
+        enemy_nearby = False
         self.age += 1
-        if (self.age % 1000 == 0):
-            print(self.name + " is " + str(self.age) + " moves old.")
-
-        if self.age % 50 == 0:
-            print(self.name + " has " + str(self.energy) + " energy.")
-            
-        canvas.delete(self.name) #only need to delete the tail and draw the head
-        canvas.delete('eye')
+        self.energy += -1
+        canvas.delete(self.name) # delete snake body
+        canvas.delete('eye') # delete snake eyes - order?
         
-        body_clipped = np.delete(self.body,0,0)
+        body_clipped = np.delete(self.body,0,0) # numpy arrays are size-immutable
             
         ''' Genetic Algorithm '''
         ''' Gen 01: The snake randomly selects one of the four cardinal
             directions or chooses no movement and heads that way. '''
 
+        v = self.view(x_step,y_step)
+
         rand_int = random.randint(1,100)
-    
-        if rand_int < 20:
-            c = np.mod(body_clipped[-1]+[1,0],[self.grid_x,self.grid_y])
-            self.energy += -1
-        if (20 <= rand_int < 40):
-            c = np.mod(body_clipped[-1]-[0,1],[self.grid_x,self.grid_y])
-            self.energy += -1
-        if (40 <= rand_int < 60):
-            c = np.mod(body_clipped[-1]-[1,0],[self.grid_x,self.grid_y])
-            self.energy += -1
-        if (60 <= rand_int <= 80):
-            c = np.mod(body_clipped[-1]+[0,1],[self.grid_x,self.grid_y])
-            self.energy += -1
-        if (80 <= rand_int <= 100):
-            c = body_clipped[-1]
+        
+        if self.fear > 50:
+            # spiral out (11 x 11) matrix - 6 midpoint.
+            for x in [1,3,5]:
+                for m in range(0,2*x):
+                    for n in range(0,2*x):
+                        if v[5-x+m,5-x+n] == 3:
+                            enemy_nearby = True
+                            [a,b] = [5-m,5-n]
+                            if a >= 0 and b >= 0:
+                                if rand_int < 50:
+                                    d = [0,1]
+                                else:
+                                    d = [1,0]
+                            if a < 0 and b < 0:
+                                if rand_int < 50:
+                                    d = [0,-1]
+                                else:
+                                    d = [-1,0]
+                            if a < 0 and b >= 0:
+                                if rand_int < 50:
+                                    d = [1,0]
+                                else:
+                                    d = [0,-1]
+                            if a >= 0 and b < 0:
+                                if rand_int < 50:
+                                    d = [0,1]
+                                else:
+                                    d = [-1,0]
+        if enemy_nearby == False:
+            if rand_int < 20:
+                d = [1,0]
+            if (20 <= rand_int < 40):
+                d = [0,-1]
+            if (40 <= rand_int < 60):
+                d = [-1,0]
+            if (60 <= rand_int <= 80):
+                d = [0,1]
+            if (80 <= rand_int <= 100):
+                d = [0,0]
+                self.energy += 1 # not moving doesn't use energy
+
+        c = np.mod(body_clipped[-1]+d,[self.grid_x,self.grid_y])
         
         ''' There's this whole stupid delete the entire body everytime
             thing too... Better is MOVE each body element? The head into
@@ -223,26 +254,14 @@ class Snake:
             in front of it... todo '''
         
         body_clipper = np.append(body_clipped,[c],0)
-
         #print(body_clipper)
-        self.body = body_clipper # nailed it! took long enough.
+        self.body = body_clipper
 
-        self.eat() #eat before draw or snake eats own head.
+        self.eat() # eat before draw or snake eats own head.
         self.draw()
         self.draw_eyes()
 
-        ''' view(): function test '''
-
-        if (self.age % 500 == 0):
-            global x_step
-            global y_step
-            self.view(x_step,y_step)
-            #print(self.head_xy(x_step,y_step))
-            #pause_loop()
-
-        if (time % 100 == 0):
-            print(self.name + " has " + str(self.energy) + " energy")
-
+        ''' snake dies if energy runs out '''
         if self.energy < 0:
             self.die()
 
@@ -251,17 +270,17 @@ class Snake:
         ''' creates a matrix of surrounding area (snakes visual field) '''
         ''' gen 01: creates a 5x5 matrix: 0 for empty, 1 for plant, '''
         ''' 2 for own body, 3 for other snake. '''
-        view_space = np.zeros([5,5])
+        view_space = np.zeros([11,11])
         head_xy = self.head_xy(x_step,y_step)
         #print(view_space)
         width = canvas.winfo_width()
         height = canvas.winfo_height()
-        for n in range(0,5):
-            for m in range(0,5):
-                x1 = np.mod(head_xy[0] - 2*x_step + n*x_step - 1, width )
-                x2 = np.mod(head_xy[0] - 2*x_step + n*x_step + 1, width )
-                y1 = np.mod(head_xy[1] - 2*y_step + m*y_step - 1, height)
-                y2 = np.mod(head_xy[1] - 2*y_step + m*y_step + 1, height) 
+        for n in range(0,10):
+            for m in range(0,10):
+                x1 = np.mod(head_xy[0] - 5*x_step + n*x_step - 1, width )
+                x2 = np.mod(head_xy[0] - 5*x_step + n*x_step + 1, width )
+                y1 = np.mod(head_xy[1] - 5*y_step + m*y_step - 1, height)
+                y2 = np.mod(head_xy[1] - 5*y_step + m*y_step + 1, height) 
                 #print(view_space[n,m])
                 #canvas.create_rectangle([x1,y1],[(x2,y2],fill='red',tag='view')
                 viewed_items = canvas.find_overlapping(x1, y1, x2, y2)
@@ -280,7 +299,9 @@ class Snake:
                     
         #print(self.body[-1])
         view_space = np.transpose(view_space)
-        print(view_space)
+        #print(view_space)
+        return view_space
+    
 ### END of Snake Class ###
 
 ''' General Purpose Functions '''
@@ -341,12 +362,13 @@ def initial_food_generation(p,row,col):
     
 
 def canvas_update():
-    """ update time counter """
-    global time
-    global loop_state
     global canvas_update_speed
-
-    if loop_state == 'on':
+    global loop_active
+    global snake_display
+    global snake_string
+    global time
+    
+    if loop_active:
         time = time + 1
         time_string = "Time = " + str(time) 
         v.set(time_string)
@@ -360,16 +382,26 @@ def canvas_update():
 
         '''add plant elements randomly'''
         #ensures the board state does not run out of food for snakes to eat.
-        if time % 12 in [0,4,8]:
+        if time % 12 in [0,4,8]: # ad hoc - growth rate variable?
             food_grow()
+
+        if snake_display:
+            for s in [snake,snake2]:
+                if s.name == snake_string:
+                    display_text.set("Snake: " + snake_string + "\n Age: " + str(s.age) + "\n Energy: " + str(s.energy))
+        
         
         canvas.after(canvas_update_speed,canvas_update)
 
 def click_canvas(event):
     global snake_string
     global left_mouse_down
+    global snake_display
 
     left_mouse_down = True
+    
+    scan_width = s_canvas.winfo_width()
+    scan_height = s_canvas.winfo_height()
     
     item = event.widget.find_withtag("current")
     itags = canvas.gettags(item)
@@ -378,13 +410,12 @@ def click_canvas(event):
     slither = [snake,snake2]
     for s in slither:
         if s.name in itags:
+            snake_display = True
             s_canvas.delete('pixel')
-            scan_width = s_canvas.winfo_width()
-            scan_height = s_canvas.winfo_height()
             xstep = scan_width/5
             ystep = scan_height/5
             snake_string = s.name
-            w.set("Snake: " + snake_string + "\n Age: " + str(s.age) + "\n Energy: " + str(s.energy))
+            display_text.set("Snake: " + snake_string + "\n Age: " + str(s.age) + "\n Energy: " + str(s.energy))
             for n in range(5):
                 for m in range(5):
                     x1 = n*xstep
@@ -399,8 +430,14 @@ def click_canvas(event):
                         s_canvas.create_rectangle(x1,y1,x2,y2,fill=s.color,tag='pixel')
             
     if 'plant' in itags:
-        w.set('plant')
+        snake_display = False
+        display_text.set('plant')
         s_canvas.delete('all')
+        x1 = (0.2)*scan_width
+        y1 = (0.2)*scan_height
+        x2 = (0.8)*scan_width
+        y2 = (0.8)*scan_height
+        s_canvas.create_rectangle(x1,y1,x2,y2,fill='green',tag='pixel')
 
 def mouse_down(event):
     global left_mouse_down
@@ -416,16 +453,16 @@ def mouse_up(event):
 # Button Toggles
 
 def toggle_play():
-    global loop_state
+    global loop_active
     global canvas_update_speed
     
-    if loop_state == 'on':
-        loop_state = 'off' #clicking play twice pauses the loop
+    if loop_active:
+        loop_active = False #clicking play twice pauses the loop
         #print(Play_Button)
         canvas_update_speed = 100
         Play_Button.config(relief="raised")
     else:
-        loop_state = 'on'
+        loop_active = True
         Play_Button.config(relief="sunken")
         canvas_update()
 
@@ -439,11 +476,11 @@ def fast_forward():
         
 
 def pause_loop():
-    global loop_state
+    global loop_active
     global canvas_update_speed
     
-    if loop_state == 'on':
-        loop_state = 'off'
+    if loop_active:
+        loop_active = False
         Play_Button.config(relief="raised")
         canvas_update_speed = 100
 
@@ -454,22 +491,17 @@ root.config(padx=5,pady=5)
 root.bind_all('<ButtonRelease-1>',mouse_up)
 root.bind_all('<Button-1>',mouse_down)
 
-''' Get user's current screen resolution '''
+''' Get geometry of root (startup) window '''
 screen_width = root.winfo_screenwidth()
 screen_height = root.winfo_screenheight()
-
 padded_w = screen_width - 400   # Pad's user screen resolution.
 padded_h = screen_height - 200  # Aesthetic for initial launch of program.
-
 str_geometry = "%dx%d" % (padded_w,padded_h)
-
 root.geometry(str_geometry)
 
-
-''' Frames - Mostly for Sidebar GUI '''
-
+''' Construction of GUI Frames '''
 # A1 BX
-# A2 BY
+# A2 BY 
 #    BZ
 
 frameA = Frame(root,bd=1,relief='solid')
@@ -495,11 +527,11 @@ s_canvas = Canvas(frameA2,width=60,height=60,bd=1,relief='solid')
 s_canvas.pack(side='left',padx=20)
 
 ''' Snake Label Below Canvas '''
-w = StringVar()
-Snake_Label = Label(frameA2,textvariable=w,bd=1,relief='solid')
-Snake_Label.pack(expand=True,fill=BOTH,side='top')
+display_text = StringVar()
 snake_string = " ... " 
-w.set(snake_string)
+display_text.set(snake_string)
+Snake_Label = Label(frameA2,textvariable=display_text,bd=1,relief='solid')
+Snake_Label.pack(expand=True,fill=BOTH,side='top')
 
 ''' Frames On Right Side '''
 frameX = Frame(frameB)
@@ -537,9 +569,6 @@ grid_size_y.pack(side='left')
 ''' Draw Grid Button '''
 # Note: Buttons pack()ed inline are not recognised as Button objects.
 
-##ToggleGrid_Button = Button(frame_gridbutton, width=12, text="Toggle Grid", command=DrawGrid)
-##ToggleGrid_Button.pack(side='bottom')
-
 ''' Food Growth - Label & Entry '''
 Food_Growth = Label(frameX, text="Food Growth = ")
 Food_Growth.pack(side='left')
@@ -565,7 +594,7 @@ time_string = "Time = " + str(time)
 v.set(time_string)
 
 ''' Boardstate Generation Button '''
-##Board_Set_Button = Button(frameZ1,text="Generate Board",command=generate_board) 
+##Board_Set_Button = Button(frameZ1,text="Reset Board",command=generate_board) 
 ##Board_Set_Button.pack()
 
 ''' Number of Snakes - Label and Entry Field '''
@@ -610,12 +639,15 @@ initial_food_generation(p,m,n)
 ''' Initialize and Draw Snakes '''
 
 body = np.array([[4,6],[5,6],[6,6]])
-snake = Snake('Jeff_Sr.',body,'#33CEFF')
+snake = Snake('Jeff_Sr.',body,'#33CEFF',20)
 snake.draw()
 
 body2 = np.array([[7,10],[8,10],[9,10]])
-snake2 = Snake('Snakerella',body2,'#B953FF')
+snake2 = Snake('Snakerella',body2,'#B953FF',88)
 snake2.draw()
+
+for [a,b] in [[11,11],[11,12],[11,13]]:
+    draw_rect(a,b,'black','snake')
 
 canvas.update()
 
