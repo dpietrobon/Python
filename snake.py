@@ -11,6 +11,7 @@ import time as tm
 global canvas_update_speed
 global left_mouse_down
 global loop_active
+global plant_list
 global snake_string
 global time
 global x_step
@@ -20,27 +21,40 @@ global snake_display
 canvas_update_speed = 100
 left_mouse_down = False
 loop_active = False
+plant_list = []
 snake_display = False
 time = 0
 
 
 class Plant:
-    def __init__(self, body):
-        self.body = body
+    def __init__(self):
         self.age = 0
+        self.x = random.randint(1,canvas.winfo_width())
+        self.y = random.randint(1,canvas.winfo_height())
+        self.image = canvas.create_rectangle(self.x-1,self.y-1,self.x+1,self.y+1,
+                                             fill='green',tag='plant')
 
     def grow(self):
         '''Grows outward from initial position ... '''
+        if self.age < 50:
+            x1 = self.x - int(self.age/3)
+            y1 = self.y - int(self.age/3)
+            x2 = self.x + int(self.age/3)
+            y2 = self.y + int(self.age/3)
+            canvas.coords(self.image,x1,y1,x2,y2)
+            canvas.update()
+            
 
 ''' SNAKE CLASS: Models Snake Object on Rectangular Grid '''
 
 class Snake:
     ''' Initialize Instance Attributes '''
-    def __init__(self, name, body, color, fear): 
+    def __init__(self, name, body, color, fear, hunger): 
         self.name = name
         self.body = body
         self.color = color
         self.fear = fear
+        self.hunger = hunger
         self.grid_x = int(grid_size_x.get())
         self.grid_y = int(grid_size_y.get())
         self.energy = 300
@@ -156,7 +170,7 @@ class Snake:
             item_y = canvas.coords(item_near)[1] + 0.5*y_step
             if (abs(head_x - item_x) < x_step-1) and (abs(head_y - item_y) < y_step-1): 
                 canvas.delete(item_near)
-                self.energy += 5
+                self.energy += 50
                 self.food_eaten += 1
                 ''' every 30 food eaten snake grows '''
                 if self.food_eaten % 30 == 0:
@@ -190,6 +204,7 @@ class Snake:
         global x_step
         global y_step
         enemy_nearby = False
+        food_nearby = False
         self.age += 1
         self.energy += -1
         canvas.delete(self.name) # delete snake body
@@ -204,9 +219,10 @@ class Snake:
         v = self.view(x_step,y_step)
 
         rand_int = random.randint(1,100)
-        
-        if self.fear > 50:
+        ''' snake is fearful with probability p = self.fear '''
+        if rand_int < self.fear:
             # spiral out (11 x 11) matrix - 6 midpoint.
+            # no need to 'spiral out' as snake runs from far enemies
             for x in [1,3,5]:
                 for m in range(0,2*x):
                     for n in range(0,2*x):
@@ -214,7 +230,9 @@ class Snake:
                             enemy_nearby = True
                             [a,b] = [5-m,5-n]
                             if a >= 0 and b >= 0:
-                                if rand_int < 50:
+                                # more detailed analysis involves slope a/b
+                                # or extricate from grid and move in opposite dir
+                                if rand_int < 50: # because we know the quadrant
                                     d = [0,1]
                                 else:
                                     d = [1,0]
@@ -233,7 +251,39 @@ class Snake:
                                     d = [0,1]
                                 else:
                                     d = [-1,0]
-        if enemy_nearby == False:
+                            break
+                        
+        if enemy_nearby == False and rand_int < self.hunger:
+            ''' move towards food '''
+            for x in [1,3,5]:
+                for m in range(0,2*x):
+                    for n in range(0,2*x):
+                        if v[5-x+m,5-x+n] == 1: # if we see food item
+                            food_nearby = True
+                            [a,b] = [5-m,5-n]
+                            if a >= 0 and b >= 0:
+                                if rand_int < 50: # because we know the quadrant
+                                    d = [0,-1]
+                                else:
+                                    d = [-1,0]
+                            if a < 0 and b < 0:
+                                if rand_int < 50:
+                                    d = [0,1]
+                                else:
+                                    d = [1,0]
+                            if a < 0 and b >= 0:
+                                if rand_int < 50:
+                                    d = [-1,0]
+                                else:
+                                    d = [0,1]
+                            if a >= 0 and b < 0:
+                                if rand_int < 50:
+                                    d = [0,-1]
+                                else:
+                                    d = [1,0]
+                            break
+
+        if enemy_nearby == False and food_nearby == False:
             if rand_int < 20:
                 d = [1,0]
             if (20 <= rand_int < 40):
@@ -364,6 +414,7 @@ def initial_food_generation(p,row,col):
 def canvas_update():
     global canvas_update_speed
     global loop_active
+    global plant_list
     global snake_display
     global snake_string
     global time
@@ -382,8 +433,14 @@ def canvas_update():
 
         '''add plant elements randomly'''
         #ensures the board state does not run out of food for snakes to eat.
-        if time % 12 in [0,4,8]: # ad hoc - growth rate variable?
-            food_grow()
+        p_gen = random.randint(1,100) # generate random probability
+        if p_gen < 5:
+            plant_list.append(Plant())
+
+        for plant in plant_list:
+            plant.age += 1
+            plant.grow()
+
 
         if snake_display:
             for s in [snake,snake2]:
@@ -570,12 +627,12 @@ grid_size_y.pack(side='left')
 # Note: Buttons pack()ed inline are not recognised as Button objects.
 
 ''' Food Growth - Label & Entry '''
-Food_Growth = Label(frameX, text="Food Growth = ")
-Food_Growth.pack(side='left')
-
-Food_Growth_Entry = Entry(frameX,width=2)
-Food_Growth_Entry.insert(0,'10')
-Food_Growth_Entry.pack(side='left')
+##Food_Growth = Label(frameX, text="Food Growth = ")
+##Food_Growth.pack(side='left')
+##
+##Food_Growth_Entry = Entry(frameX,width=2)
+##Food_Growth_Entry.insert(0,'10')
+##Food_Growth_Entry.pack(side='left')
 
 ''' Food Generation - Label & Entry '''
 Initial_Food = Label(frameY, text="Initial Food = ")
@@ -631,23 +688,18 @@ Pause_Button.pack(side='left')
 canvas.update()
 [x_step,y_step] = grid_steps() 
 
-p = 33 # Initial proportion of food on canvas
-m = 20 # Initial number of rows
-n = 20 # Initial number of columns
-initial_food_generation(p,m,n)
-
 ''' Initialize and Draw Snakes '''
 
 body = np.array([[4,6],[5,6],[6,6]])
-snake = Snake('Jeff_Sr.',body,'#33CEFF',20)
+snake = Snake('Jeff_Sr.',body,'#33CEFF',fear=20,hunger=100)
 snake.draw()
 
 body2 = np.array([[7,10],[8,10],[9,10]])
-snake2 = Snake('Snakerella',body2,'#B953FF',88)
+snake2 = Snake('Snakerella',body2,'#B953FF',fear=88,hunger=100)
 snake2.draw()
 
-for [a,b] in [[11,11],[11,12],[11,13]]:
-    draw_rect(a,b,'black','snake')
+##for [a,b] in [[11,11],[11,12],[11,13]]:
+##    draw_rect(a,b,'black','snake')
 
 canvas.update()
 
