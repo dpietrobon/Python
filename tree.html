@@ -1,0 +1,159 @@
+<html>
+<head>
+<title> Tree Game</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+<style>
+canvas {
+    background-color: #E5E7E9;
+    padding-left: 0;
+    padding-right: 0;
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+}
+</style>
+
+<canvas id="canvas" style="border: 1px solid black;" width = 100 height = 100>
+Your browser does not support the HTML5 canvas tag.
+</canvas>
+
+
+<script>
+
+// Everything wrapped in onload for reasons...
+window.onload = function(){
+
+// Declare Global Variables
+var update_speed = 100;
+
+// Initialize Game Canvas
+var canvas = document.getElementById('canvas');
+canvas.width  = 800;
+canvas.height = 600;
+var ctx = canvas.getContext('2d');
+ctx.globalCompositeOperation = 'source-over';
+//var title_image = new Image();
+var title_status = true;
+
+function draw_line(x1,y1,x2,y2){
+	ctx.beginPath();
+	ctx.moveTo(x1, y1);
+	ctx.lineTo(x2, y2);
+	ctx.stroke();
+}
+
+// Ground dimensions
+var buttonX = 1;
+var buttonY = 480;
+var buttonW = 798;
+var buttonH = 119;
+
+// Draw ground
+ctx.fillStyle = 'brown';
+ctx.fillRect(buttonX, buttonY, buttonW, buttonH);
+//ctx.drawImage(title_image, 0, 0);
+
+var i = 0;
+function update_title(){
+	if (title_status == true){
+		x1 = 399;
+		y1 = 478;
+		x2 = 399;
+		y2 = 477+i;
+		draw_line(x1,y1,x2,y2);
+		draw_line(398,478,398 - i/3,477-i);
+		}
+	
+	
+	if (i==10){
+		
+		b1x = 578;
+		b1y = 504;
+		b1w = 164;
+		b1h = 54
+		
+		ctx.fillStyle = 'black';
+		ctx.fillRect(b1x,b1y,b1w,b1h)
+		//var alpha = 0.1;
+        //ctx.globalAlpha = alpha;    
+		ctx.fillStyle = 'white';
+		ctx.fillRect(580,506,160,50)
+		ctx.globalAlpha = 1.0
+		ctx.font = '24px Arial';
+		ctx.fillStyle = 'black';
+		var button_text = 'Start Game'
+		ctx.fillText(button_text, 600, 540);
+		ctx.fillStyle = 'brown';
+	
+	}
+	
+	if (i==10){
+		// Add event listener to canvas element
+		canvas.addEventListener('click', function(event) {
+		// Control that click event occurred within position of button
+		// NOTE: This assumes canvas is positioned at top left corner 
+		var rect = canvas.getBoundingClientRect();
+		var x = event.clientX - rect.left;
+		var y = event.clientY - rect.top;
+		if (x > b1x && x < b1x + b1w && y > b1y && y < b1y + b1h){
+			ctx.clearRect(0, 0, canvas.width, canvas.height);
+			title_status = false;
+			i = 0;
+			game();
+		}
+	});
+	}
+	
+	i++;
+	if (title_status == true){
+		setTimeout(update_title,update_speed);
+	}
+}
+
+update_title()
+
+function update_game(){
+	// clear all
+	ctx.clearRect(0, 0, canvas.width, canvas.height);
+	ctx.fillStyle = 'brown';
+	ctx.fillRect(buttonX, buttonY, buttonW, buttonH);
+	// game clock
+	ctx.fillStyle = 'black';
+	var itext = i.toString();
+	ctx.fillText(itext, 100, 540);
+	ctx.fillStyle = 'brown';
+	i++;
+	setTimeout(update_game,update_speed);
+}
+
+function game(){
+
+ctx.fillRect(50, 50, 600, 400);
+
+update_game();
+
+canvas.addEventListener('click', function(event) {
+  // Control that click event occurred within position of button
+  // NOTE: This assumes canvas is positioned at top left corner 
+	var rect = canvas.getBoundingClientRect();
+    var x = event.clientX - rect.left;
+    var y = event.clientY - rect.top;
+    if (x > buttonX && x < buttonX + buttonW && y > buttonY && y < buttonY + buttonH){
+		ctx.clearRect(0, 0, canvas.width, canvas.height);
+		//document.write("x: " + x + " y: " + y);
+		ctx.fillRect(3, 3, 60, 40);
+	}
+});
+
+}
+
+
+}
+
+
+
+</script>
+
+</body>
+</html>
